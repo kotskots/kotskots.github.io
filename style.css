@@ -99,3 +99,35 @@ footer {
         columns: 1; /* 1 στήλη σε μικρές οθόνες */
     }
 }
+
+/* Κεντράρισμα εικόνας και ονόματος */
+body h1 {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+body img {
+    display: block;
+    margin: 0 auto 20px auto; /* 0 πάνω, auto αριστερά/δεξιά, 20px κάτω */
+    border-radius: 50%;
+}
+
+.language-switch {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.language-switch .btn {
+    background-color: #4CAF50;
+    color: white;
+    padding: 8px 16px;
+    text-decoration: none;
+    border-radius: 5px;
+    margin: 0 5px;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.language-switch .btn:hover {
+    background-color: #45a049;
+}
