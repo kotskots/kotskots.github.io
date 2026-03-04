@@ -320,3 +320,8 @@ li {
   color: var(--muted);
   padding: 18px 0 6px 0;
 }
+
+.avatar {
+  width: 120px;
+  height: 120px;
+}
