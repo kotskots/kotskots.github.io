@@ -7,13 +7,19 @@
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
+    <!-- Sticky progress bar (JS) -->
+    <div class="progress-wrap">
+      <div class="progress-inner">
+        <div class="progressbar"><span data-progress></span></div>
+      </div>
+    </div>
+
     <div class="language-switch">
       <a href="index.html" class="btn">English</a>
       <a href="index-el.html" class="btn active">Ελληνικά</a>
     </div>
 
     <div class="container">
-      <!-- HERO -->
       <header class="hero">
         <img
           class="avatar"
@@ -22,7 +28,8 @@
         />
         <h1>Κωνσταντίνος Αγγελόπουλος</h1>
         <p class="subtitle">
-          WordPress Developer • Elementor • WooCommerce • Performance & SEO
+          WordPress Developer • Elementor • WooCommerce • HTML/CSS • JavaScript
+          • Tracking & Events (GTM/Meta/TikTok)
         </p>
 
         <div class="hero-actions">
@@ -31,46 +38,85 @@
         </div>
       </header>
 
-      <!-- ABOUT -->
-      <section class="card" id="about">
-        <h2>Σχετικά</h2>
+      <section class="card" id="summary">
+        <h2>Περίληψη</h2>
         <p>
           WordPress Developer με υπόβαθρο στην Πληροφορική και πρακτική εμπειρία
-          σε responsive ιστοσελίδες με WordPress, Elementor και custom HTML/CSS.
-          Εστιάζω σε καθαρό UI, performance, βασικό SEO και integrations (GA4,
-          caching, πολυγλωσσικά).
+          σε conversion-focused landing pages, WooCommerce καταστήματα και
+          responsive UI με WordPress, Elementor, HTML, CSS και JavaScript.
+          Εμπειρία σε tracking setup (Google Tag Manager, Meta Pixel, TikTok
+          Pixel) και custom events για CTA, φόρμες και ecommerce ενέργειες.
+          Άνετος με responsive navbar (burger menu), validation φορμών και UX
+          micro-interactions.
         </p>
 
         <div class="chips">
           <span class="chip">WordPress</span>
           <span class="chip">Elementor</span>
           <span class="chip">WooCommerce</span>
-          <span class="chip">HTML/CSS</span>
-          <span class="chip">JS basics</span>
-          <span class="chip">PHP basics</span>
-          <span class="chip">GA4</span>
-          <span class="chip">WPML</span>
-          <span class="chip">Yoast SEO</span>
+          <span class="chip">HTML</span>
+          <span class="chip">CSS</span>
+          <span class="chip">JavaScript</span>
+          <span class="chip">GTM</span>
+          <span class="chip">Meta Pixel</span>
+          <span class="chip">TikTok Pixel</span>
         </div>
       </section>
 
-      <!-- PROJECTS -->
       <section class="card" id="projects">
         <div class="section-head">
           <h2>Projects</h2>
-          <p class="muted">Επιλεγμένα client projects</p>
+          <p class="muted">Client δουλειές + τεχνικό test</p>
         </div>
 
         <div class="projects">
           <article class="project-card">
-            <h3>Art of Glass</h3>
+            <h3>WordPress Landing Page — Technical Test</h3>
             <p>
-              Business website σε WordPress με responsive layout και εύκολο CMS
-              editing.
+              Project αξιολόγησης: ολοκληρωμένο landing page + WooCommerce +
+              tracking integrations + responsive UI.
             </p>
             <div class="meta">
-              <span>WordPress</span><span>Elementor</span><span>SEO</span>
+              <span>WordPress</span><span>WooCommerce</span
+              ><span>JavaScript</span><span>GTM</span>
             </div>
+            <ul>
+              <li>
+                Landing page με Hero, Features/Benefits και τελικό CTA section.
+              </li>
+              <li>Responsive navbar που γίνεται burger menu σε mobile.</li>
+              <li>
+                Custom signup form (όνομα, email, password, checkbox όρων) +
+                submit handling.
+              </li>
+              <li>
+                WooCommerce setup: κατηγορίες, simple & variable products,
+                default shop/cart/checkout pages.
+              </li>
+              <li>
+                Tracking setup με placeholder IDs (GTM / Meta Pixel / TikTok
+                Pixel) και custom events σε CTA, add-to-cart και φόρμες.
+              </li>
+              <li>
+                Extra UX micro-interaction (progress bar με JS σε scroll).
+              </li>
+            </ul>
+          </article>
+
+          <article class="project-card">
+            <h3>Art of Glass</h3>
+            <p>
+              Business site σε WordPress/Elementor με responsive layout και
+              SEO-friendly δομή.
+            </p>
+            <div class="meta">
+              <span>Elementor</span><span>Custom CSS</span><span>SEO</span>
+            </div>
+            <ul>
+              <li>Responsive βελτιώσεις και UI cleanup.</li>
+              <li>On-page SEO basics και performance-minded αλλαγές.</li>
+              <li>Editor-friendly CMS για εύκολες ενημερώσεις.</li>
+            </ul>
             <a
               class="link"
               href="https://artofglass.gr/"
@@ -82,11 +128,16 @@
 
           <article class="project-card">
             <h3>Porto Psakoudia</h3>
-            <p>Ιστοσελίδα φιλοξενίας με βελτιώσεις σε UX & performance.</p>
+            <p>Site φιλοξενίας με βελτιώσεις σε UX και performance.</p>
             <div class="meta">
-              <span>WordPress</span><span>Elementor</span
-              ><span>Performance</span>
+              <span>Elementor</span><span>Performance</span
+              ><span>Responsive</span>
             </div>
+            <ul>
+              <li>Mobile-first ανασχεδιασμός sections.</li>
+              <li>Βελτίωση ταχύτητας (caching, εικόνες).</li>
+              <li>Καλύτερη ιεραρχία περιεχομένου και CTA.</li>
+            </ul>
             <a
               class="link"
               href="https://portopsakoudia.gr/"
@@ -98,13 +149,15 @@
 
           <article class="project-card">
             <h3>Phi Construction</h3>
-            <p>
-              Corporate website με καθαρή δομή sections, custom styling και
-              βασικό on-page SEO.
-            </p>
+            <p>Corporate site με καθαρή δομή και custom styling.</p>
             <div class="meta">
-              <span>WordPress</span><span>Custom CSS</span><span>SEO</span>
+              <span>WordPress</span><span>Custom CSS</span><span>UI</span>
             </div>
+            <ul>
+              <li>Δομή sections (services, projects, contact CTA).</li>
+              <li>Custom CSS για συνέπεια στο design.</li>
+              <li>SEO-friendly δομή σελίδων.</li>
+            </ul>
             <a
               class="link"
               href="https://phiconstruction.gr/"
@@ -117,12 +170,16 @@
           <article class="project-card">
             <h3>Greek Nannies</h3>
             <p>
-              Service website με δομημένες σελίδες και έμφαση στη διαχείριση
-              περιεχομένου.
+              Service website με έμφαση σε καθαρό UI και content management.
             </p>
             <div class="meta">
-              <span>WordPress</span><span>Elementor</span><span>UI</span>
+              <span>WordPress</span><span>Elementor</span><span>UX</span>
             </div>
+            <ul>
+              <li>Elementor sections / reusable blocks.</li>
+              <li>Καθαρή δομή περιεχομένου για usability.</li>
+              <li>Εύκολη διαχείριση από editors.</li>
+            </ul>
             <a
               class="link"
               href="https://greeknannies.com/"
@@ -134,7 +191,6 @@
         </div>
       </section>
 
-      <!-- EXPERIENCE -->
       <section class="card" id="experience">
         <h2>Εμπειρία</h2>
 
@@ -146,21 +202,17 @@
           <p class="role">WordPress Developer Intern</p>
           <ul>
             <li>
-              Σχεδίασα και υλοποίησα responsive WordPress sites με Elementor και
-              custom CSS.
+              Κατασκευή και παραμετροποίηση WordPress sites (hospitality,
+              municipalities, corporate).
             </li>
             <li>
-              Theme customization και front-end βελτιώσεις με HTML/CSS και
-              βασικό JavaScript.
+              Responsive layouts με Elementor, HTML, CSS και βασικό JavaScript.
             </li>
             <li>
-              Integrations: Yoast SEO, GA4, εργαλεία caching/performance (π.χ.
-              WP Rocket), cookie compliance.
+              Integrations: WPML, Yoast SEO, WP Rocket, cookie compliance, GA4.
             </li>
-            <li>
-              Πολυγλωσσικά setups με WPML και δημιουργία οδηγιών χρήσης για
-              editors.
-            </li>
+            <li>Debugging/optimization και front-end UI βελτιώσεις.</li>
+            <li>Οδηγοί χρήσης για editors (content management).</li>
           </ul>
         </div>
 
@@ -171,16 +223,13 @@
           </div>
           <p class="role">Talent Sourcer</p>
           <ul>
-            <li>Διαχείριση pipelines, ATS database και research υποψηφίων.</li>
-            <li>Talent pools με Boolean search και social recruiting.</li>
-            <li>
-              Υποστήριξη KPI-driven διαδικασιών με reporting και επικοινωνία.
-            </li>
+            <li>Διαχείριση pipelines και ATS database.</li>
+            <li>Boolean search και social recruiting.</li>
+            <li>Ισχυρό research και KPI-driven υποστήριξη.</li>
           </ul>
         </div>
       </section>
 
-      <!-- EDUCATION -->
       <section class="card" id="education">
         <h2>Εκπαίδευση</h2>
         <p><strong>Διεθνές Πανεπιστήμιο Ελλάδος</strong> — Σέρρες</p>
@@ -194,40 +243,40 @@
         </ul>
       </section>
 
-      <!-- SKILLS -->
       <section class="card" id="skills">
         <h2>Δεξιότητες</h2>
 
         <div class="grid-2">
           <div>
-            <h3>WordPress / Web</h3>
+            <h3>WordPress / Web Development</h3>
             <ul>
-              <li>WordPress & WooCommerce</li>
-              <li>Elementor, WPBakery, Slider Revolution</li>
-              <li>HTML5, CSS3</li>
-              <li>JavaScript basics, PHP basics</li>
-              <li>Performance optimization (caching, images)</li>
-              <li>SEO fundamentals (Yoast, on-page)</li>
-              <li>Πολυγλωσσικά sites (WPML, Polylang)</li>
-              <li>GA4, cookie consent tools</li>
+              <li>WordPress & WooCommerce (setup, pages, products)</li>
+              <li>Elementor / WPBakery</li>
+              <li>HTML5, CSS3 (responsive, mobile-first)</li>
+              <li>JavaScript (DOM, event listeners, UI micro-interactions)</li>
+              <li>PHP basics</li>
+              <li>Landing pages (hero, features, benefits, CTAs)</li>
+              <li>Responsive navbar (burger menu)</li>
+              <li>Forms: validation, UX, submit handling</li>
             </ul>
           </div>
 
           <div>
-            <h3>Ακαδημαϊκά / Τεχνικά</h3>
+            <h3>WooCommerce / Tracking / Analytics</h3>
             <ul>
-              <li>C, C++, Java fundamentals</li>
-              <li>Δομές Δεδομένων & Αλγόριθμοι</li>
-              <li>SQL basics</li>
-              <li>OOP, debugging</li>
-              <li>Δίκτυα & Λειτουργικά Συστήματα</li>
-              <li>Research & τεχνική συγγραφή</li>
+              <li>WooCommerce categories, simple & variable products</li>
+              <li>Default Woo pages: Shop, Cart, Checkout</li>
+              <li>Google Tag Manager (placeholder IDs setup)</li>
+              <li>Meta Pixel integration (placeholder IDs)</li>
+              <li>TikTok Pixel integration (placeholder IDs)</li>
+              <li>Custom events (CTA clicks, add-to-cart, form submits)</li>
+              <li>SEO fundamentals (Yoast, on-page)</li>
+              <li>Performance optimization (caching, image handling)</li>
             </ul>
           </div>
         </div>
       </section>
 
-      <!-- CTA -->
       <section class="cta">
         <h2>Θες να συνεργαστούμε;</h2>
         <p class="muted">
@@ -240,5 +289,7 @@
         <p>© 2026 Κωνσταντίνος Αγγελόπουλος</p>
       </footer>
     </div>
+
+    <script src="./app.js"></script>
   </body>
 </html>
