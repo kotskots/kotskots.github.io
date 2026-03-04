@@ -1,117 +1,255 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Resume</title>
-    <link rel="stylesheet" href="./style.css">
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Konstantinos Angelopoulos | WordPress Developer</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
     <div class="language-switch">
-    <a href="index.html" class="btn">English</a>
-    <a href="index-el.html" class="btn">Ελληνικά</a>
+      <a href="index.html" class="btn active">English</a>
+      <a href="index-el.html" class="btn">Ελληνικά</a>
     </div>
-    
-    <h1>Konstantinos Angelopoulos</h1>
-    <img src="./assets/images/Konstantinos Angelopoulos.jpeg" height="200" alt="Konstantinos Angelopoulos"/>
 
-
-    <div class="section">
-        <h2>🔗 Summary</h2>
-        <p>Versatile professional with dual expertise in Talent Sourcing and WordPress Development. 
-            Experienced in managing recruitment pipelines, candidate sourcing, and ATS systems, while also building responsive websites with WordPress, Elementor, 
-            and custom code. Adept at problem-solving, research, and delivering results in both people-oriented and technical environments.
+    <div class="container">
+      <!-- HERO -->
+      <header class="hero">
+        <img
+          class="avatar"
+          src="./assets/images/Konstantinos Angelopoulos.jpeg"
+          alt="Konstantinos Angelopoulos"
+        />
+        <h1>Konstantinos Angelopoulos</h1>
+        <p class="subtitle">
+          WordPress Developer • Elementor • WooCommerce • Performance & SEO
         </p>
-    </div>
 
-    <div class="section">
-        <h2>📚 Education</h2>
-        <p>International Hellenic University – Serres, Greece<br />
-        B.Sc. in Computer Science (expected Sept 2025)</p>
-        <ul>
-            <li>Thesis: “Search Algorithms: Sequential, Binary, Hash Table, Visualization & Efficiency Comparison”</li>
-        </ul>
-    </div>
+        <div class="hero-actions">
+          <a class="primary" href="#projects">View Projects</a>
+          <a class="secondary" href="./public/contact.html">Contact</a>
+        </div>
+      </header>
 
-    <div class="section">
-        <h2>💼 Experience</h2>
-        <h3>ArtAbout – Thessaloniki, Greece</h3>
-        <p><i>WordPress Developer Intern | Jan 2025 – Jun 2025</i></p>
-        <ul>
-            <li>Built and customized WordPress websites for clients across hospitality, municipalities, and corporate sectors.</li>
-            <li>Developed responsive layouts using Elementor, HTML, CSS, and custom PHP/JS.</li>
-            <li>Integrated third-party tools including WPML, Yoast SEO, WP Rocket, Real Cookie Banner, Google Analytics (GA4).</li>
-            <li>Produced detailed user manuals for municipal employees on website content management.</li>
-            <li>Collaborated with senior developers on debugging, optimization, and front-end design.</li>
-            <li>Key projects:
-                <ul>
-                    <li><a href="https://artofglass.gr/">Art of Glass</a></li>
-                    <li><a href="https://portopsakoudia.gr/">Porto Psakoudia</a></li>
-                    <li><a href="https://phiconstruction.gr/">Phi Construction</a></li>
-                    <li><a href="https://greeknannies.com/">Greek Nannies</a></li>
-                    <li><a href="https://portopsakoudia.gr/">Porto Psakoudia</a></li>
-                </ul>
+      <!-- ABOUT -->
+      <section class="card" id="about">
+        <h2>About</h2>
+        <p>
+          WordPress Developer with a Computer Science background and hands-on
+          experience building responsive websites using WordPress, Elementor,
+          and custom HTML/CSS. I focus on clean UI, performance optimization,
+          SEO basics, and integrations (GA4, caching, multilingual).
+        </p>
+
+        <div class="chips">
+          <span class="chip">WordPress</span>
+          <span class="chip">Elementor</span>
+          <span class="chip">WooCommerce</span>
+          <span class="chip">HTML/CSS</span>
+          <span class="chip">JS basics</span>
+          <span class="chip">PHP basics</span>
+          <span class="chip">GA4</span>
+          <span class="chip">WPML</span>
+          <span class="chip">Yoast SEO</span>
+        </div>
+      </section>
+
+      <!-- PROJECTS -->
+      <section class="card" id="projects">
+        <div class="section-head">
+          <h2>Projects</h2>
+          <p class="muted">Selected real client projects</p>
+        </div>
+
+        <div class="projects">
+          <article class="project-card">
+            <h3>Art of Glass</h3>
+            <p>
+              Business website built on WordPress with responsive layout and CMS
+              editing.
+            </p>
+            <div class="meta">
+              <span>WordPress</span><span>Elementor</span><span>SEO</span>
+            </div>
+            <a
+              class="link"
+              href="https://artofglass.gr/"
+              target="_blank"
+              rel="noopener"
+              >Visit site →</a
+            >
+          </article>
+
+          <article class="project-card">
+            <h3>Porto Psakoudia</h3>
+            <p>Hospitality website with performance & UX improvements.</p>
+            <div class="meta">
+              <span>WordPress</span><span>Elementor</span
+              ><span>Performance</span>
+            </div>
+            <a
+              class="link"
+              href="https://portopsakoudia.gr/"
+              target="_blank"
+              rel="noopener"
+              >Visit site →</a
+            >
+          </article>
+
+          <article class="project-card">
+            <h3>Phi Construction</h3>
+            <p>
+              Corporate website with clean sections, custom styling, and on-page
+              SEO basics.
+            </p>
+            <div class="meta">
+              <span>WordPress</span><span>Custom CSS</span
+              ><span>On-page SEO</span>
+            </div>
+            <a
+              class="link"
+              href="https://phiconstruction.gr/"
+              target="_blank"
+              rel="noopener"
+              >Visit site →</a
+            >
+          </article>
+
+          <article class="project-card">
+            <h3>Greek Nannies</h3>
+            <p>
+              Service website with structured pages and content management for
+              editors.
+            </p>
+            <div class="meta">
+              <span>WordPress</span><span>Elementor</span><span>UI</span>
+            </div>
+            <a
+              class="link"
+              href="https://greeknannies.com/"
+              target="_blank"
+              rel="noopener"
+              >Visit site →</a
+            >
+          </article>
+        </div>
+      </section>
+
+      <!-- EXPERIENCE -->
+      <section class="card" id="experience">
+        <h2>Experience</h2>
+
+        <div class="timeline-item">
+          <div class="timeline-top">
+            <h3>ArtAbout — Thessaloniki, Greece</h3>
+            <span class="badge">Jan 2025 – Jun 2025</span>
+          </div>
+          <p class="role">WordPress Developer Intern</p>
+          <ul>
+            <li>
+              Designed and developed responsive WordPress websites using
+              Elementor and custom CSS.
             </li>
-        </ul>
+            <li>
+              Customized themes and implemented front-end improvements using
+              HTML/CSS and basic JavaScript.
+            </li>
+            <li>
+              Integrated Yoast SEO, GA4, caching/performance tools (e.g., WP
+              Rocket), and cookie compliance plugins.
+            </li>
+            <li>
+              Set up multilingual functionality using WPML and supported content
+              editors with clear documentation.
+            </li>
+          </ul>
+        </div>
 
-        <h3>Vaia (remote collaboration)</h3>
-        <p><i>Talent Sourcer | 2022 – 2024</i></p>
+        <div class="timeline-item">
+          <div class="timeline-top">
+            <h3>Vaia (remote)</h3>
+            <span class="badge">2022 – 2024</span>
+          </div>
+          <p class="role">Talent Sourcer</p>
+          <ul>
+            <li>
+              Managed sourcing pipelines, ATS database, and candidate research.
+            </li>
+            <li>
+              Built talent pools for recurring roles using Boolean search and
+              social recruiting.
+            </li>
+            <li>
+              Supported KPI-driven recruitment processes with consistent
+              reporting and communication.
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- EDUCATION -->
+      <section class="card" id="education">
+        <h2>Education</h2>
+        <p>
+          <strong>International Hellenic University</strong> — Serres, Greece
+        </p>
+        <p>
+          B.Sc. in Computer Science — <strong>Graduated December 2025</strong>
+        </p>
+        <p>Grade: <strong>6.60 / 10</strong></p>
         <ul>
-            <li>Coordinated with Sourcing Lead to understand client position requirements and KPIs.</li>
-            <li>Identified qualified candidate profiles through advanced sourcing methods, Boolean search, and social media recruiting.</li>
-            <li>Developed and maintained talent pools for recurring roles while managing ATS database.</li>
-            <li>Researched companies and skill sets to strengthen sourcing strategies.</li>
-            <li>Leveraged professional network for candidate referrals to support high-volume recruitment.</li>
+          <li>
+            Thesis: “Search Algorithms: Sequential, Binary, Hash Table,
+            Visualization & Efficiency Comparison”
+          </li>
         </ul>
-    </div>
+      </section>
 
-    <div class="section skills">
+      <!-- SKILLS -->
+      <section class="card" id="skills">
         <h2>Skills</h2>
 
-        <h3>🌐 WordPress / Web Development Skills</h3>
-        <ul>
-            <li>WordPress & WooCommerce</li>
-            <li>Elementor, Slider Revolution, WPBakery</li>
-            <li>HTML5, CSS3, JavaScript basics, PHP basics</li>
-            <li>Responsive & Mobile-first Design</li>
-            <li>SEO fundamentals (Yoast SEO, On-page optimization)</li>
-            <li>Website performance optimization (caching, image compression, WP Rocket)</li>
-            <li>Multilingual site setup (WPML, Polylang)</li>
-            <li>Version control basics (Git, cPanel file management)</li>
-        </ul>
+        <div class="grid-2">
+          <div>
+            <h3>WordPress / Web</h3>
+            <ul>
+              <li>WordPress & WooCommerce</li>
+              <li>Elementor, WPBakery, Slider Revolution</li>
+              <li>HTML5, CSS3</li>
+              <li>JavaScript basics, PHP basics</li>
+              <li>Performance optimization (caching, images)</li>
+              <li>SEO fundamentals (Yoast, on-page)</li>
+              <li>Multilingual sites (WPML, Polylang)</li>
+              <li>GA4, cookie consent tools</li>
+            </ul>
+          </div>
 
-        <h3>👥 Talent Sourcing Skills</h3>
-        <ul>
-            <li>Candidate Sourcing (Boolean search, LinkedIn Recruiter, social media)</li>
-            <li>Talent Pool Development</li>
-            <li>Applicant Tracking Systems (ATS)</li>
-            <li>Candidate Screening & Market Research</li>
-            <li>KPI-driven Recruitment Support</li>
-            <li>Networking & Candidate Engagement</li>
-            <li>Data entry & Database Management</li>
-            <li>Communication & Collaboration</li>
-        </ul>
+          <div>
+            <h3>Academic / Technical</h3>
+            <ul>
+              <li>C, C++, Java fundamentals</li>
+              <li>Data Structures & Algorithms</li>
+              <li>SQL basics</li>
+              <li>OOP, debugging</li>
+              <li>Computer Networks & Operating Systems</li>
+              <li>Research & technical writing</li>
+            </ul>
+          </div>
+        </div>
+      </section>
 
-        <h3>📚 University / Academic Skills</h3>
-        <ul>
-            <li>Programming Fundamentals (C, C++, Java)</li>
-            <li>Data Structures & Algorithms (Sequential, Binary, Hash Tables, Searching & Sorting)</li>
-            <li>Database Management (SQL basics)</li>
-            <li>Software Development Principles (Object-Oriented Programming, Debugging)</li>
-            <li>Computer Networks & Operating Systems (Linux, Windows)</li>
-            <li>Physics & Circuit Analysis (RC, RL, LC circuits, Electromagnetic Oscillations)</li>
-            <li>Mathematical & Analytical Problem Solving</li>
-            <li>Research & Technical Writing (Thesis, Reports, Presentations)</li>
-        </ul>
+      <!-- CTA -->
+      <section class="cta">
+        <h2>Want to work together?</h2>
+        <p class="muted">
+          I’m available for WordPress / Elementor projects and junior web roles.
+        </p>
+        <a class="primary" href="./public/contact.html">Contact Me</a>
+      </section>
+
+      <footer class="footer">
+        <p>© 2026 Konstantinos Angelopoulos</p>
+      </footer>
     </div>
-
-    <div class="section">
-        <h2><a href="./public/contact.html">Contact Me</a></h2>
-    </div>
-
-    <footer>
-        <p>© 2025 Konstantinos Angelopoulos</p>
-    </footer>
-</body>
+  </body>
 </html>
-
