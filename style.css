@@ -396,3 +396,65 @@ li {
   color: var(--muted);
   padding: 18px 0 6px 0;
 }
+
+/* Projects Grid Styling */
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.project-card-new {
+  background: #fff;
+  border: 1px solid #e1e4e8;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.project-card-new:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+}
+
+.project-img-container {
+  width: 100%;
+  height: 180px;
+  overflow: hidden;
+  background: #f6f8fa;
+}
+
+.project-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Αυτό κάνει την εικόνα να γεμίζει το πλαίσιο σωστά */
+}
+
+.project-info {
+  padding: 20px;
+  flex-grow: 1;
+}
+
+.project-info h3 {
+  margin: 0 0 10px 0;
+  font-size: 1.2rem;
+}
+
+.project-info p {
+  font-size: 0.9rem;
+  color: #586069;
+  line-height: 1.5;
+  margin-bottom: 15px;
+}
+
+.link {
+  color: #2ea44f;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
