@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
-    <!-- Sticky progress bar (JS) -->
     <div class="progress-wrap">
       <div class="progress-inner">
         <div class="progressbar"><span data-progress></span></div>
@@ -20,7 +19,6 @@
     </div>
 
     <div class="container">
-      <!-- HERO -->
       <header class="hero">
         <img
           class="avatar"
@@ -39,17 +37,14 @@
         </div>
       </header>
 
-      <!-- SUMMARY -->
       <section class="card" id="summary">
         <h2>Summary</h2>
         <p>
-          WordPress Developer with a Computer Science background and hands-on
-          experience building conversion-focused landing pages, WooCommerce
-          stores, and responsive interfaces using WordPress, Elementor, HTML,
-          CSS, and JavaScript. Experienced in implementing tracking setups
-          (Google Tag Manager, Meta Pixel, TikTok Pixel) with custom events for
-          CTAs, forms, and ecommerce actions. Comfortable with responsive
-          navigation (burger menu), form validation, and UX micro-interactions.
+          WordPress Developer με υπόβαθρο στην Πληροφορική και εμπειρία στην
+          κατασκευή landing pages που εστιάζουν στις μετατροπές, καταστημάτων
+          WooCommerce και responsive interfaces. Εξειδικεύομαι στην υλοποίηση
+          tracking setups (GTM, Meta, TikTok) και στη δημιουργία UX
+          micro-interactions με JavaScript.
         </p>
 
         <div class="chips">
@@ -65,145 +60,104 @@
         </div>
       </section>
 
-      <!-- PROJECTS -->
       <section class="card" id="projects">
         <div class="section-head">
           <h2>Projects</h2>
-          <p class="muted">Real client work + technical evaluation project</p>
+          <p class="muted">Real client work & personal projects</p>
         </div>
 
-        <div class="projects">
-          <article class="project-card">
-            <h3>WordPress Landing Page — Technical Test</h3>
-            <p>
-              Evaluation project: complete landing page + WooCommerce + tracking
-              integrations + responsive UI.
-            </p>
-            <div class="meta">
-              <span>WordPress</span><span>WooCommerce</span
-              ><span>JavaScript</span><span>GTM</span>
+        <div class="projects-grid">
+          <article class="project-card-new">
+            <img
+              src="./assets/images/image_a9610b.png"
+              alt="Groovebox.gr Radio"
+              class="project-img"
+            />
+            <div class="project-info">
+              <h3>Groovebox.gr</h3>
+              <p>
+                Προσωπικό project διαδικτυακού ραδιοφώνου με αυτόματο
+                προγραμματισμό ροής και custom UI για την αναπαραγωγή μουσικής.
+              </p>
+              <a
+                class="link"
+                href="https://groovebox.gr/"
+                target="_blank"
+                rel="noopener"
+                >Visit site →</a
+              >
             </div>
-            <ul>
-              <li>
-                Landing page with Hero, Features/Benefits, and final CTA
-                section.
-              </li>
-              <li>Responsive navbar that turns into burger menu on mobile.</li>
-              <li>
-                Custom signup form (name, email, password, terms checkbox) +
-                submit handling.
-              </li>
-              <li>
-                WooCommerce setup with categories, simple & variable products,
-                default shop/cart/checkout pages.
-              </li>
-              <li>
-                Tracking setup with placeholder IDs (GTM / Meta Pixel / TikTok
-                Pixel) and custom events on CTAs, add-to-cart, and form submits.
-              </li>
-              <li>
-                Extra UX micro-interaction (this page includes a scroll progress
-                indicator using JS).
-              </li>
-            </ul>
           </article>
 
-          <article class="project-card">
-            <h3>Art of Glass</h3>
-            <p>
-              Business website built with WordPress and Elementor with
-              responsive layout and SEO-friendly structure.
-            </p>
-            <div class="meta">
-              <span>Elementor</span><span>Custom CSS</span><span>SEO</span>
+          <article class="project-card-new">
+            <img
+              src="./assets/images/artofglass-screenshot.jpg"
+              alt="Art of Glass"
+              class="project-img"
+            />
+            <div class="project-info">
+              <h3>Art of Glass</h3>
+              <p>
+                Εταιρική ιστοσελίδα κατασκευασμένη με WordPress και Elementor,
+                εστιάζοντας στο responsive design και την ανάδειξη έργων
+                υαλοπινάκων.
+              </p>
+              <a
+                class="link"
+                href="https://artofglass.gr/"
+                target="_blank"
+                rel="noopener"
+                >Visit site →</a
+              >
             </div>
-            <ul>
-              <li>Responsive layout improvements and UI cleanup.</li>
-              <li>On-page SEO basics and performance-minded asset handling.</li>
-              <li>CMS editing experience for easy content updates.</li>
-            </ul>
-            <a
-              class="link"
-              href="https://artofglass.gr/"
-              target="_blank"
-              rel="noopener"
-              >Visit site →</a
-            >
           </article>
 
-          <article class="project-card">
-            <h3>Porto Psakoudia</h3>
-            <p>
-              Hospitality website with UX improvements and performance
-              optimizations.
-            </p>
-            <div class="meta">
-              <span>Elementor</span><span>Performance</span
-              ><span>Responsive</span>
+          <article class="project-card-new">
+            <img
+              src="./assets/images/portopsakoudia-screenshot.jpg"
+              alt="Porto Psakoudia"
+              class="project-img"
+            />
+            <div class="project-info">
+              <h3>Porto Psakoudia</h3>
+              <p>
+                Website τουριστικού καταλύματος με βελτιστοποίηση ταχύτητας και
+                mobile-first προσέγγιση για αύξηση των κρατήσεων.
+              </p>
+              <a
+                class="link"
+                href="https://portopsakoudia.gr/"
+                target="_blank"
+                rel="noopener"
+                >Visit site →</a
+              >
             </div>
-            <ul>
-              <li>Responsive section redesign for mobile-first UX.</li>
-              <li>
-                Speed improvements (caching strategy, image optimization
-                approach).
-              </li>
-              <li>Cleaner CTAs and content hierarchy for conversions.</li>
-            </ul>
-            <a
-              class="link"
-              href="https://portopsakoudia.gr/"
-              target="_blank"
-              rel="noopener"
-              >Visit site →</a
-            >
           </article>
 
-          <article class="project-card">
-            <h3>Phi Construction</h3>
-            <p>
-              Corporate website with clear sections, custom styling and
-              structured content.
-            </p>
-            <div class="meta">
-              <span>WordPress</span><span>Custom CSS</span><span>UI</span>
+          <article class="project-card-new">
+            <img
+              src="./assets/images/phiconstruction-screenshot.jpg"
+              alt="Phi Construction"
+              class="project-img"
+            />
+            <div class="project-info">
+              <h3>Phi Construction</h3>
+              <p>
+                Παρουσίαση τεχνικού γραφείου με καθαρή δομή, custom CSS styling
+                και έμφαση στην επαγγελματική παρουσίαση υπηρεσιών.
+              </p>
+              <a
+                class="link"
+                href="https://phiconstruction.gr/"
+                target="_blank"
+                rel="noopener"
+                >Visit site →</a
+              >
             </div>
-            <ul>
-              <li>Structured layout (services, projects, contact CTA).</li>
-              <li>Custom CSS enhancements for a consistent brand look.</li>
-              <li>Basic SEO-friendly page structure.</li>
-            </ul>
-            <a
-              class="link"
-              href="https://phiconstruction.gr/"
-              target="_blank"
-              rel="noopener"
-              >Visit site →</a
-            >
-          </article>
-
-          <article class="project-card">
-            <h3>Greek Nannies</h3>
-            <p>Service website focusing on content management and clean UI.</p>
-            <div class="meta">
-              <span>WordPress</span><span>Elementor</span><span>UX</span>
-            </div>
-            <ul>
-              <li>Page building with Elementor and reusable sections.</li>
-              <li>Clean content structure for usability.</li>
-              <li>Editor-friendly content workflows.</li>
-            </ul>
-            <a
-              class="link"
-              href="https://greeknannies.com/"
-              target="_blank"
-              rel="noopener"
-              >Visit site →</a
-            >
           </article>
         </div>
       </section>
 
-      <!-- EXPERIENCE -->
       <section class="card" id="experience">
         <h2>Experience</h2>
 
@@ -222,14 +176,7 @@
               Created responsive layouts using Elementor, HTML, CSS and basic
               JavaScript.
             </li>
-            <li>
-              Integrated tools: WPML, Yoast SEO, WP Rocket, cookie compliance,
-              Google Analytics (GA4).
-            </li>
-            <li>
-              Collaborated on debugging, optimization, and front-end UI
-              improvements.
-            </li>
+            <li>Integrated tools: WPML, Yoast SEO, WP Rocket, GA4.</li>
             <li>
               Delivered user manuals for editors on content management
               workflows.
@@ -245,16 +192,11 @@
           <p class="role">Talent Sourcer</p>
           <ul>
             <li>Managed sourcing pipelines and ATS database management.</li>
-            <li>
-              Used advanced sourcing (Boolean search, social recruiting) for
-              recurring roles.
-            </li>
             <li>Strong research, communication, and KPI-driven support.</li>
           </ul>
         </div>
       </section>
 
-      <!-- EDUCATION -->
       <section class="card" id="education">
         <h2>Education</h2>
         <p>
@@ -272,42 +214,30 @@
         </ul>
       </section>
 
-      <!-- SKILLS -->
       <section class="card" id="skills">
         <h2>Skills</h2>
-
         <div class="grid-2">
           <div>
             <h3>WordPress / Web Development</h3>
             <ul>
-              <li>WordPress & WooCommerce (setup, pages, products)</li>
+              <li>WordPress & WooCommerce setup</li>
               <li>Elementor / WPBakery</li>
-              <li>HTML5, CSS3 (responsive, mobile-first)</li>
-              <li>JavaScript (DOM, event listeners, UI micro-interactions)</li>
-              <li>PHP basics</li>
-              <li>Landing pages (hero, features, benefits, CTAs)</li>
-              <li>Responsive navbar (burger menu)</li>
-              <li>Forms: validation, UX, submit handling</li>
+              <li>HTML5, CSS3 (Responsive)</li>
+              <li>JavaScript (DOM & UI interactions)</li>
             </ul>
           </div>
-
           <div>
-            <h3>WooCommerce / Tracking / Analytics</h3>
+            <h3>Tracking & Analytics</h3>
             <ul>
-              <li>WooCommerce categories, simple & variable products</li>
-              <li>Default Woo pages: Shop, Cart, Checkout</li>
-              <li>Google Tag Manager (placeholder IDs setup)</li>
-              <li>Meta Pixel integration (placeholder IDs)</li>
-              <li>TikTok Pixel integration (placeholder IDs)</li>
-              <li>Custom events (CTA clicks, add-to-cart, form submits)</li>
-              <li>SEO fundamentals (Yoast, on-page)</li>
-              <li>Performance optimization (caching, image handling)</li>
+              <li>Google Tag Manager</li>
+              <li>Meta & TikTok Pixels</li>
+              <li>Custom Event Tracking</li>
+              <li>SEO & Performance Optimization</li>
             </ul>
           </div>
         </div>
       </section>
 
-      <!-- CTA -->
       <section class="cta">
         <h2>Want to work together?</h2>
         <p class="muted">
