@@ -1,71 +1,354 @@
 <!doctype html>
 <html lang="el">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Portfolio του Κωνσταντίνου Αγγελόπουλου, WordPress Developer στη Θεσσαλονίκη." />
-  <title>Κωνσταντίνος Αγγελόπουλος | WordPress Developer</title>
-  <link rel="stylesheet" href="./style.css" />
-  <link rel="icon" type="image/png" href="./assets/images/favicon.png" />
-</head>
-<body>
-  <div class="progressbar" aria-hidden="true"><span data-progress></span></div>
-  <nav class="site-nav" aria-label="Κύρια πλοήγηση">
-    <a class="brand" href="#top">KA<span>.</span></a>
-    <div class="nav-links"><a href="#projects">Projects</a><a href="#experience">Εμπειρία</a><a href="#skills">Δεξιότητες</a><a href="#contact">Επικοινωνία</a></div>
-    <a class="language-link" href="index.html" lang="en">EN</a>
-  </nav>
-
-  <main class="container" id="top">
-    <header class="hero">
-      <div class="hero-copy">
-        <p class="eyebrow">WordPress Developer · Θεσσαλονίκη</p>
-        <h1>Δημιουργώ καθαρές, responsive WordPress ιστοσελίδες που λειτουργούν.</h1>
-        <p class="lead">Μετατρέπω designs και επιχειρηματικές ανάγκες σε ολοκληρωμένα, εύχρηστα websites με WordPress, Elementor και custom front-end κώδικα.</p>
-        <div class="hero-actions"><a class="button primary" href="#projects">Δες τη δουλειά μου</a><a class="button secondary" href="#contact">Επικοινωνία</a><a class="text-link" href="https://www.linkedin.com/in/konstantinos-angelopoulos-b0b09991/" target="_blank" rel="noopener">LinkedIn ↗</a></div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Κωνσταντίνος Αγγελόπουλος | WordPress Developer</title>
+    <link rel="stylesheet" href="./style.css" />
+    <link rel="icon" type="image/png" href="./assets/images/favicon.png" />
+    <style>
+      /* Αυξάνει το κενό ανάμεσα στις ενότητες της εμπειρίας */
+      .separator {
+        margin: 2.5rem 0;
+        opacity: 0.15;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="progress-wrap">
+      <div class="progress-inner">
+        <div class="progressbar"><span data-progress></span></div>
       </div>
-      <div class="portrait-wrap"><img class="avatar" src="./assets/images/Konstantinos Angelopoulos.jpeg" alt="Κωνσταντίνος Αγγελόπουλος" /><div class="availability"><span></span> Διαθέσιμος για νέες ευκαιρίες</div></div>
-    </header>
+    </div>
 
-    <section class="section intro" id="about">
-      <div><p class="eyebrow">Σχετικά με εμένα</p><h2>Πρακτική προσέγγιση στην ανάπτυξη, με έμφαση στον άνθρωπο.</h2></div>
-      <p>Είμαι ένας δραστήριος και προσαρμοστικός επαγγελματίας με πρακτική εμπειρία στο web development και σε ρόλους άμεσης επικοινωνίας. Δημιουργώ WordPress websites με Elementor, responsive HTML/CSS και προσεγμένες λεπτομέρειες UI, συνεργαζόμενος με designers και ομάδες έργου για να μετατρέπω ιδέες σε αξιόπιστες ψηφιακές εμπειρίες. Το υπόβαθρό μου στην Πληροφορική υποστηρίζει μια δομημένη προσέγγιση στην επίλυση προβλημάτων.</p>
-    </section>
+    <div class="language-switch">
+      <a href="index.html" class="btn">English</a>
+      <a href="index-el.html" class="btn active">Ελληνικά</a>
+    </div>
 
-    <section class="section" id="projects">
-      <div class="section-heading"><div><p class="eyebrow">Επιλεγμένες δουλειές</p><h2>Projects</h2></div><p>Ιστοσελίδες πελατών και προσωπικά digital projects.</p></div>
-      <div class="projects-grid">
-        <article class="project-card featured"><a class="project-image release-image" href="https://releasewellnesslounge.com/" target="_blank" rel="noopener"><img src="./assets/images/release-wellness-lounge.png" alt="Release Wellness Lounge website" /></a><div class="project-info"><div class="project-top"><h3>Release Wellness Lounge</h3><span>2026</span></div><p>Πλήρες WordPress website για wellness lounge στη Νέα Υόρκη, κατασκευασμένο από την αρχή με Elementor. Multi-page, conversion-focused εμπειρία με custom responsive ενότητες, περιεχόμενο θεραπειών, memberships και booking journeys.</p><div class="tags"><span>WordPress</span><span>Elementor</span><span>Custom CSS</span><span>Responsive</span></div><a class="project-link" href="https://releasewellnesslounge.com/" target="_blank" rel="noopener">Άνοιγμα website ↗</a></div></article>
-        <article class="project-card featured"><a class="project-image" href="https://prismstudio.co.uk/" target="_blank" rel="noopener"><img src="./assets/images/prism-studio.jpg" alt="Prism Studio website" /></a><div class="project-info"><div class="project-top"><h3>Prism Studio</h3><span>2026</span></div><p>Πλήρες WordPress website για creative studio του Ηνωμένου Βασιλείου, υλοποιημένο από την αρχή. Παρουσιάζει υπηρεσίες, agency positioning και case studies μέσα από ένα έντονο, responsive οπτικό σύστημα.</p><div class="tags"><span>WordPress</span><span>Elementor</span><span>Custom CSS</span><span>Responsive</span></div><a class="project-link" href="https://prismstudio.co.uk/" target="_blank" rel="noopener">Άνοιγμα website ↗</a></div></article>
-        <article class="project-card"><a class="project-image" href="https://groovebox.gr/" target="_blank" rel="noopener"><img src="./assets/images/image_a9610b.png" alt="Groovebox.gr" /></a><div class="project-info"><h3>Groovebox.gr</h3><p>Προσωπικό web radio project με αυτόματο προγραμματισμό ροής και custom interface αναπαραγωγής.</p><div class="tags"><span>HTML</span><span>CSS</span><span>JavaScript</span></div><a class="project-link" href="https://groovebox.gr/" target="_blank" rel="noopener">Άνοιγμα website ↗</a></div></article>
-        <article class="project-card"><a class="project-image" href="https://artofglass.gr/" target="_blank" rel="noopener"><img src="./assets/images/pasxos.png" alt="Art of Glass" /></a><div class="project-info"><h3>Art of Glass</h3><p>Responsive επαγγελματικό website με καθαρή, SEO-friendly δομή και προσαρμοσμένη παρουσίαση.</p><div class="tags"><span>WordPress</span><span>Elementor</span></div><a class="project-link" href="https://artofglass.gr/" target="_blank" rel="noopener">Άνοιγμα website ↗</a></div></article>
-        <article class="project-card"><a class="project-image" href="https://portopsakoudia.gr/" target="_blank" rel="noopener"><img src="./assets/images/porto-psakoudia.png" alt="Porto Psakoudia" /></a><div class="project-info"><h3>Porto Psakoudia</h3><p>Website φιλοξενίας με βελτιώσεις στη χρηστικότητα, το responsive behaviour και την απόδοση.</p><div class="tags"><span>WordPress</span><span>UX</span><span>Performance</span></div><a class="project-link" href="https://portopsakoudia.gr/" target="_blank" rel="noopener">Άνοιγμα website ↗</a></div></article>
-        <article class="project-card"><a class="project-image" href="https://phiconstruction.gr/" target="_blank" rel="noopener"><img src="./assets/images/phi-construction.png" alt="Phi Construction" /></a><div class="project-info"><h3>Phi Construction</h3><p>Εταιρικό website με καθαρή αρχιτεκτονική πληροφορίας, custom styling και επαγγελματική παρουσίαση υπηρεσιών.</p><div class="tags"><span>WordPress</span><span>Elementor</span></div><a class="project-link" href="https://phiconstruction.gr/" target="_blank" rel="noopener">Άνοιγμα website ↗</a></div></article>
-        <article class="project-card"><a class="project-image" href="https://greeknannies.com/" target="_blank" rel="noopener"><img src="./assets/images/greek-nannies.png" alt="Greek Nannies" /></a><div class="project-info"><h3>Greek Nannies</h3><p>Service website με έμφαση στην καθαρή πλοήγηση, το προσιτό UI και την εύκολη διαχείριση περιεχομένου.</p><div class="tags"><span>WordPress</span><span>Elementor</span></div><a class="project-link" href="https://greeknannies.com/" target="_blank" rel="noopener">Άνοιγμα website ↗</a></div></article>
-        <article class="project-card"><a class="project-image" href="https://bonnevillerealty.com/" target="_blank" rel="noopener"><img src="./assets/images/bonneville.png" alt="Bonneville Realty Management" /></a><div class="project-info"><h3>Bonneville Realty</h3><p>Website διαχείρισης ακινήτων με περιεχόμενο προσανατολισμένο στις υπηρεσίες και responsive, εύχρηστη δομή.</p><div class="tags"><span>WordPress</span><span>Elementor</span></div><a class="project-link" href="https://bonnevillerealty.com/" target="_blank" rel="noopener">Άνοιγμα website ↗</a></div></article>
-      </div>
-    </section>
+    <div class="container">
+      <header class="hero">
+        <img
+          class="avatar"
+          src="./assets/images/Konstantinos Angelopoulos.jpeg"
+          alt="Κωνσταντίνος Αγγελόπουλος"
+        />
+        <h1>Κωνσταντίνος Αγγελόπουλος</h1>
+        <p class="subtitle">
+          WordPress Developer • Elementor • WooCommerce • HTML/CSS • JavaScript
+          • Tracking & Events (GTM/Meta/TikTok)
+        </p>
 
-    <section class="section" id="experience">
-      <div class="section-heading"><div><p class="eyebrow">Πορεία</p><h2>Επαγγελματική εμπειρία</h2></div><a class="text-link" href="https://www.linkedin.com/in/konstantinos-angelopoulos-b0b09991/" target="_blank" rel="noopener">Πλήρες προφίλ στο LinkedIn ↗</a></div>
-      <div class="timeline">
-        <article class="experience-item"><div class="experience-meta"><p>Core Concepts</p><span>2026 — Σήμερα</span></div><div><h3>Web Developer</h3><p>Δημιουργία και βελτίωση responsive WordPress websites για πελάτες διαφορετικών κλάδων. Μετατροπή creative direction και επιχειρηματικών αναγκών σε ολοκληρωμένες υλοποιήσεις Elementor, custom layouts και αξιόπιστες εμπειρίες χρήστη.</p><ul><li>Ανάπτυξη ολοκληρωμένων websites σε WordPress και Elementor.</li><li>Responsive interfaces και custom CSS για desktop, tablet και mobile.</li><li>Συνεργασία σε content structure, UI λεπτομέρειες, testing και προετοιμασία launch.</li></ul></div></article>
-        <article class="experience-item"><div class="experience-meta"><p>ArtAbout eCommerce Agency</p><span>2025 — 2026</span></div><div><h3>Junior Web Developer</h3><p>Ανάπτυξη και προσαρμογή WordPress websites με Elementor, HTML και CSS, σε συνεργασία με designers και project managers.</p><ul><li>Responsive layouts και βελτιώσεις UI/UX με custom CSS.</li><li>Ρύθμιση φορμών, SEO εργαλείων και WordPress plugins.</li><li>Testing και debugging για σταθερή απόδοση και σωστή λειτουργία.</li></ul></div></article>
-        <article class="experience-item"><div class="experience-meta"><p>Ajul Luxury Hotel & Spa Resort</p><span>2024</span></div><div><h3>Γκρουμ</h3><p>Παροχή υπηρεσιών πέντε αστέρων σε πολυτελές resort, συντονισμός με το Front Office και επικοινωνία με διεθνές πελατολόγιο.</p></div></article>
-        <article class="experience-item"><div class="experience-meta"><p>Vaia Talent</p><span>2022 — 2024</span></div><div><h3>Talent Sourcer</h3><p>Αναζήτηση υποψηφίων σε επαγγελματικά δίκτυα, ανάπτυξη talent pipelines, διαχείριση ATS και συνεργασία με την ομάδα sourcing για την επίτευξη ποιοτικών και ποσοτικών στόχων.</p></div></article>
-      </div>
-    </section>
+        <div class="hero-actions">
+          <a class="primary" href="#projects">Δες Projects</a>
+          <a class="secondary" href="./public/contact-el.html">Επικοινωνία</a>
+        </div>
+      </header>
 
-    <section class="section split" id="skills">
-      <div><p class="eyebrow">Δυνατότητες</p><h2>Δεξιότητες & εργαλεία</h2><p class="section-copy">Πρακτική WordPress υλοποίηση—από page building και responsive styling μέχρι launch checks, analytics και συνεχή βελτίωση.</p></div>
-      <div class="skill-groups"><div><h3>Development</h3><p>WordPress · Elementor · HTML5 · CSS3 · JavaScript · PHP basics · Responsive development</p></div><div><h3>WordPress ecosystem</h3><p>WooCommerce · ACF · Custom Post Types · WPForms · SMTP · Astra · SEO plugins</p></div><div><h3>Βελτιστοποίηση</h3><p>On-page SEO · Performance · Caching · Image optimisation · Responsive QA · Debugging</p></div><div><h3>Analytics</h3><p>GA4 · Google Tag Manager · Meta Pixel · TikTok Pixel · Custom events</p></div></div>
-    </section>
+      <section class="card" id="summary">
+        <h2>Περίληψη</h2>
+        <p>
+          WordPress Developer με υπόβαθρο στην Πληροφορική και πρακτική εμπειρία
+          σε conversion-focused landing pages, WooCommerce καταστήματα και
+          responsive UI με WordPress, Elementor, HTML, CSS και JavaScript.
+          Εμπειρία σε tracking setup (Google Tag Manager, Meta Pixel, TikTok
+          Pixel) και custom events για CTA, φόρμες και ecommerce ενέργειες.
+          Άνετος με responsive navbar (burger menu), validation φορμών και UX
+          micro-interactions.
+        </p>
 
-    <section class="section education" id="education"><div><p class="eyebrow">Εκπαίδευση</p><h2>Πτυχίο Πληροφορικής</h2></div><div><h3>Διεθνές Πανεπιστήμιο Ελλάδος</h3><p>Σέρρες · Απόφοιτος, Δεκέμβριος 2025 · Βαθμός 6,60 / 10</p><p class="muted">Πτυχιακή: Αλγόριθμοι αναζήτησης—σειριακή, δυαδική και hash table· οπτικοποίηση και σύγκριση αποδοτικότητας.</p></div></section>
+        <div class="chips">
+          <span class="chip">WordPress</span>
+          <span class="chip">Elementor</span>
+          <span class="chip">WooCommerce</span>
+          <span class="chip">HTML</span>
+          <span class="chip">CSS</span>
+          <span class="chip">JavaScript</span>
+          <span class="chip">GTM</span>
+          <span class="chip">Meta Pixel</span>
+          <span class="chip">TikTok Pixel</span>
+        </div>
+      </section>
 
-    <section class="contact" id="contact"><p class="eyebrow">Ας μιλήσουμε</p><h2>Έχεις κάποιο project ή επαγγελματική ευκαιρία;</h2><p>Είμαι διαθέσιμος για WordPress και Elementor projects, συνεργασίες και θέσεις web development.</p><div class="contact-actions"><a class="button light" href="mailto:kotsaggelop@gmail.com">kotsaggelop@gmail.com</a><a class="button outline-light" href="tel:+306980409554">+30 698 040 9554</a><a class="button outline-light" href="https://www.linkedin.com/in/konstantinos-angelopoulos-b0b09991/" target="_blank" rel="noopener">LinkedIn ↗</a></div></section>
-  </main>
-  <footer class="footer"><p>© 2026 Κωνσταντίνος Αγγελόπουλος</p><a href="#top">Επιστροφή πάνω ↑</a></footer>
-  <script src="./app.js"></script>
-</body>
+      <section class="card" id="projects">
+        <div class="section-head">
+          <h2>Projects</h2>
+          <p class="muted">Client δουλειές + προσωπικά projects</p>
+        </div>
+
+        <div class="projects-grid">
+          <article class="project-card-new">
+            <div class="project-img-container">
+              <img
+                src="./assets/images/image_a9610b.png"
+                alt="Groovebox.gr Radio"
+                class="project-img"
+              />
+            </div>
+            <div class="project-info">
+              <h3>Groovebox.gr</h3>
+              <p>
+                Προσωπικό project διαδικτυακού ραδιοφώνου με αυτόματο
+                προγραμματισμό ροής και custom UI για την αναπαραγωγή μουσικής.
+              </p>
+              <a class="link" href="https://groovebox.gr/" target="_blank"
+                >Άνοιγμα →</a
+              >
+            </div>
+          </article>
+
+          <article class="project-card-new">
+            <div class="project-img-container">
+              <img
+                src="./assets/images/pasxos.png"
+                alt="Art of Glass"
+                class="project-img"
+              />
+            </div>
+            <div class="project-info">
+              <h3>Art of Glass</h3>
+              <p>
+                Business site σε WordPress/Elementor με responsive layout και
+                SEO-friendly δομή.
+              </p>
+              <a class="link" href="https://artofglass.gr/" target="_blank"
+                >Άνοιγμα →</a
+              >
+            </div>
+          </article>
+
+          <article class="project-card-new">
+            <div class="project-img-container">
+              <img
+                src="./assets/images/porto-psakoudia.png"
+                alt="Porto Psakoudia"
+                class="project-img"
+              />
+            </div>
+            <div class="project-info">
+              <h3>Porto Psakoudia</h3>
+              <p>
+                Site φιλοξενίας με βελτιώσεις σε UX και performance (speed
+                optimization).
+              </p>
+              <a class="link" href="https://portopsakoudia.gr/" target="_blank"
+                >Άνοιγμα →</a
+              >
+            </div>
+          </article>
+
+          <article class="project-card-new">
+            <div class="project-img-container">
+              <img
+                src="./assets/images/phi-construction.png"
+                alt="Phi Construction"
+                class="project-img"
+              />
+            </div>
+            <div class="project-info">
+              <h3>Phi Construction</h3>
+              <p>
+                Corporate site με καθαρή δομή, custom styling και παρουσίαση
+                υπηρεσιών.
+              </p>
+              <a class="link" href="https://phiconstruction.gr/" target="_blank"
+                >Άνοιγμα →</a
+              >
+            </div>
+          </article>
+
+          <article class="project-card-new">
+            <div class="project-img-container">
+              <img
+                src="./assets/images/greek-nannies.png"
+                alt="Greek Nannies"
+                class="project-img"
+              />
+            </div>
+            <div class="project-info">
+              <h3>Greek Nannies</h3>
+              <p>
+                Service website με έμφαση σε καθαρό UI και εύκολο content
+                management.
+              </p>
+              <a class="link" href="https://greeknannies.com/" target="_blank"
+                >Άνοιγμα →</a
+              >
+            </div>
+          </article>
+
+          <article class="project-card-new">
+            <div class="project-img-container">
+              <img
+                src="./assets/images/bonneville.png"
+                alt="Bonneville Realty Management"
+                class="project-img"
+              />
+            </div>
+            <div class="project-info">
+              <h3>Bonneville Realty Management</h3>
+              <p>
+                Website διαχείρισης ακινήτων σε WordPress/Elementor, με καθαρή
+                δομή, service-focused περιεχόμενο και responsive εμπειρία
+                χρήστη.
+              </p>
+              <a class="link" href="https://bonnevillerealty.com/" target="_blank"
+                >Άνοιγμα →</a
+              >
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="card" id="experience">
+        <h2>Επαγγελματική Εμπειρία</h2>
+
+        <div class="experience-item">
+          <h3>Junior Web Developer — ArtAbout eCommerce Agency</h3>
+          <p class="muted">Ιανουάριος 2025 – Ιούλιος 2025</p>
+          <ul>
+            <li>
+              Ανέπτυξα και διαμόρφωσα ιστοσελίδες WordPress χρησιμοποιώντας
+              Elementor, HTML και CSS.
+            </li>
+            <li>
+              Δημιούργησα responsive layouts για σωστή προβολή σε desktop,
+              tablet και mobile συσκευές.
+            </li>
+            <li>
+              Εφάρμοσα custom CSS για βελτίωση της εμφάνισης και της εμπειρίας
+              χρήστη (UI/UX).
+            </li>
+            <li>
+              Ενσωμάτωσα plugins για λειτουργίες όπως φόρμες επικοινωνίας, SEO
+              και επιπλέον site functionality.
+            </li>
+            <li>
+              Συνεργάστηκα με designers και project managers για την υλοποίηση
+              web projects σύμφωνα με τις ανάγκες των πελατών.
+            </li>
+            <li>
+              Συμμετείχα σε testing και debugging ιστοσελίδων για τη διασφάλιση
+              σωστής λειτουργίας και απόδοσης.
+            </li>
+          </ul>
+        </div>
+
+        <hr class="separator" />
+
+        <div class="experience-item">
+          <h3>Γκρουμ — Ajul Luxury Hotel & Spa Resort</h3>
+          <p class="muted">Ιούνιος 2024 – Νοέμβριος 2024</p>
+          <ul>
+            <li>
+              Παρείχα εμπειρίες υποδοχής πέντε αστέρων σε πολυτελές resort 166
+              δωματίων, χρησιμοποιώντας ηλεκτρικά golf carts και buggies.
+            </li>
+            <li>
+              Συνεργάστηκα με το Front Office για τη βελτιστοποίηση των
+              διαδικασιών check-in/out και την εξυπηρέτηση έκτακτων αιτημάτων.
+            </li>
+            <li>
+              Παρείχα ενημέρωση στους επισκέπτες σχετικά με τις εγκαταστάσεις
+              και οδηγίες ασφάλειας.
+            </li>
+            <li>
+              Προσέφερα ποιοτική εξυπηρέτηση σε πολυπολιτισμικό περιβάλλον με
+              επαγγελματική επικοινωνία.
+            </li>
+          </ul>
+        </div>
+
+        <hr class="separator" />
+
+        <div class="experience-item">
+          <h3>Talent Sourcer — Vaia Talent</h3>
+          <p class="muted">Ιούλιος 2022 – Μάιος 2024</p>
+          <ul>
+            <li>
+              Εντόπισα προφίλ υποψηφίων χρησιμοποιώντας σύγχρονες μεθόδους
+              sourcing και εξειδικευμένα εργαλεία.
+            </li>
+            <li>
+              Αναζήτησα υποψηφίους σε επαγγελματικά δίκτυα και μέσα κοινωνικής
+              δικτύωσης.
+            </li>
+            <li>
+              Ανέπτυξα talent pools και pipelines για επαναλαμβανόμενες θέσεις
+              εργασίας.
+            </li>
+            <li>
+              Διατήρησα ακριβές και ενημερωμένο το Applicant Tracking System
+              (ATS).
+            </li>
+            <li>
+              Συνεργάστηκα με τον Sourcing Lead για την επίτευξη KPIs ποιότητας
+              και όγκου υποψηφίων.
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="card" id="education">
+        <h2>Εκπαίδευση</h2>
+        <p><strong>Διεθνές Πανεπιστήμιο Ελλάδος</strong> — Σέρρες</p>
+        <p>Πτυχίο Πληροφορικής — <strong>Απόφοιτος Δεκέμβριος 2025</strong></p>
+        <p>Βαθμός: <strong>6.60 / 10</strong></p>
+        <ul>
+          <li>
+            Πτυχιακή: “Search Algorithms: Sequential, Binary, Hash Table,
+            Visualization & Efficiency Comparison”
+          </li>
+        </ul>
+      </section>
+
+      <section class="card" id="skills">
+        <h2>Δεξιότητες</h2>
+
+        <div class="grid-2">
+          <div>
+            <h3>WordPress / Web Development</h3>
+            <ul>
+              <li>WordPress & WooCommerce (setup, pages, products)</li>
+              <li>Elementor / WPBakery</li>
+              <li>HTML5, CSS3 (responsive, mobile-first)</li>
+              <li>JavaScript (DOM, event listeners, UI micro-interactions)</li>
+              <li>PHP basics</li>
+              <li>Landing pages (hero, features, benefits, CTAs)</li>
+              <li>Responsive navbar (burger menu)</li>
+              <li>Forms: validation, UX, submit handling</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3>WooCommerce / Tracking / Analytics</h3>
+            <ul>
+              <li>WooCommerce categories, simple & variable products</li>
+              <li>Default Woo pages: Shop, Cart, Checkout</li>
+              <li>Google Tag Manager (placeholder IDs setup)</li>
+              <li>Meta Pixel integration (placeholder IDs)</li>
+              <li>TikTok Pixel integration (placeholder IDs)</li>
+              <li>Custom events (CTA clicks, add-to-cart, form submits)</li>
+              <li>SEO fundamentals (Yoast, on-page)</li>
+              <li>Performance optimization (caching, image handling)</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="cta">
+        <h2>Θες να συνεργαστούμε;</h2>
+        <p class="muted">
+          Διαθέσιμος για WordPress / Elementor projects και junior web ρόλους.
+        </p>
+        <a class="primary" href="./public/contact-el.html">Επικοινωνία</a>
+      </section>
+
+      <footer class="footer">
+        <p>© 2026 Κωνσταντίνος Αγγελόπουλος</p>
+      </footer>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
 </html>

@@ -1,71 +1,344 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Portfolio of Konstantinos Angelopoulos, a WordPress Developer based in Thessaloniki, Greece." />
-  <title>Konstantinos Angelopoulos | WordPress Developer</title>
-  <link rel="stylesheet" href="./style.css" />
-  <link rel="icon" type="image/png" href="./assets/images/favicon.png" />
-</head>
-<body>
-  <div class="progressbar" aria-hidden="true"><span data-progress></span></div>
-  <nav class="site-nav" aria-label="Main navigation">
-    <a class="brand" href="#top">KA<span>.</span></a>
-    <div class="nav-links"><a href="#projects">Projects</a><a href="#experience">Experience</a><a href="#skills">Skills</a><a href="#contact">Contact</a></div>
-    <a class="language-link" href="index-el.html" lang="el">ΕΛ</a>
-  </nav>
-
-  <main class="container" id="top">
-    <header class="hero">
-      <div class="hero-copy">
-        <p class="eyebrow">WordPress Developer · Thessaloniki, Greece</p>
-        <h1>I build clear, responsive WordPress websites that work.</h1>
-        <p class="lead">I turn designs and business requirements into polished, easy-to-manage websites using WordPress, Elementor and custom front-end code.</p>
-        <div class="hero-actions"><a class="button primary" href="#projects">View my work</a><a class="button secondary" href="#contact">Get in touch</a><a class="text-link" href="https://www.linkedin.com/in/konstantinos-angelopoulos-b0b09991/" target="_blank" rel="noopener">LinkedIn ↗</a></div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Konstantinos Angelopoulos | WordPress Developer</title>
+    <link rel="stylesheet" href="./style.css" />
+    <link rel="icon" type="image/png" href="./assets/images/favicon.png" />
+    <style>
+      /* Increases spacing between experience sections */
+      .separator {
+        margin: 2.5rem 0;
+        opacity: 0.15;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="progress-wrap">
+      <div class="progress-inner">
+        <div class="progressbar"><span data-progress></span></div>
       </div>
-      <div class="portrait-wrap"><img class="avatar" src="./assets/images/Konstantinos Angelopoulos.jpeg" alt="Konstantinos Angelopoulos" /><div class="availability"><span></span> Open to opportunities</div></div>
-    </header>
+    </div>
 
-    <section class="section intro" id="about">
-      <div><p class="eyebrow">About me</p><h2>A practical developer with a people-first approach.</h2></div>
-      <p>Motivated and adaptable professional with hands-on experience in web development and client-facing roles. I build WordPress websites with Elementor, responsive HTML/CSS and thoughtful UI details, collaborating with designers and project teams to turn ideas into reliable digital experiences. My Computer Science background supports a structured approach to problem-solving, while my previous roles have strengthened my communication, organisation and attention to detail.</p>
-    </section>
+    <div class="language-switch">
+      <a href="index.html" class="btn active">English</a>
+      <a href="index-el.html" class="btn">Ελληνικά</a>
+    </div>
 
-    <section class="section" id="projects">
-      <div class="section-heading"><div><p class="eyebrow">Selected work</p><h2>Projects</h2></div><p>Client websites and personal digital projects.</p></div>
-      <div class="projects-grid">
-        <article class="project-card featured"><a class="project-image release-image" href="https://releasewellnesslounge.com/" target="_blank" rel="noopener"><img src="./assets/images/release-wellness-lounge.png" alt="Release Wellness Lounge website" /></a><div class="project-info"><div class="project-top"><h3>Release Wellness Lounge</h3><span>2026</span></div><p>Complete WordPress website for a New York wellness lounge, built from the ground up with Elementor. A multi-page, conversion-focused experience with custom responsive sections, therapy content, memberships and booking journeys.</p><div class="tags"><span>WordPress</span><span>Elementor</span><span>Custom CSS</span><span>Responsive</span></div><a class="project-link" href="https://releasewellnesslounge.com/" target="_blank" rel="noopener">Visit website ↗</a></div></article>
-        <article class="project-card featured"><a class="project-image" href="https://prismstudio.co.uk/" target="_blank" rel="noopener"><img src="./assets/images/prism-studio.jpg" alt="Prism Studio website" /></a><div class="project-info"><div class="project-top"><h3>Prism Studio</h3><span>2026</span></div><p>Complete WordPress website for a UK creative studio, developed from the ground up. The site presents services, agency positioning and case studies through a bold, responsive visual system.</p><div class="tags"><span>WordPress</span><span>Elementor</span><span>Custom CSS</span><span>Responsive</span></div><a class="project-link" href="https://prismstudio.co.uk/" target="_blank" rel="noopener">Visit website ↗</a></div></article>
-        <article class="project-card"><a class="project-image" href="https://groovebox.gr/" target="_blank" rel="noopener"><img src="./assets/images/image_a9610b.png" alt="Groovebox.gr" /></a><div class="project-info"><h3>Groovebox.gr</h3><p>Personal web radio project with automated stream scheduling and a custom music-player interface.</p><div class="tags"><span>HTML</span><span>CSS</span><span>JavaScript</span></div><a class="project-link" href="https://groovebox.gr/" target="_blank" rel="noopener">Visit website ↗</a></div></article>
-        <article class="project-card"><a class="project-image" href="https://artofglass.gr/" target="_blank" rel="noopener"><img src="./assets/images/pasxos.png" alt="Art of Glass" /></a><div class="project-info"><h3>Art of Glass</h3><p>Responsive business website with a clear, SEO-friendly structure and tailored presentation.</p><div class="tags"><span>WordPress</span><span>Elementor</span></div><a class="project-link" href="https://artofglass.gr/" target="_blank" rel="noopener">Visit website ↗</a></div></article>
-        <article class="project-card"><a class="project-image" href="https://portopsakoudia.gr/" target="_blank" rel="noopener"><img src="./assets/images/porto-psakoudia.png" alt="Porto Psakoudia" /></a><div class="project-info"><h3>Porto Psakoudia</h3><p>Hospitality website improved for usability, responsive behaviour and overall performance.</p><div class="tags"><span>WordPress</span><span>UX</span><span>Performance</span></div><a class="project-link" href="https://portopsakoudia.gr/" target="_blank" rel="noopener">Visit website ↗</a></div></article>
-        <article class="project-card"><a class="project-image" href="https://phiconstruction.gr/" target="_blank" rel="noopener"><img src="./assets/images/phi-construction.png" alt="Phi Construction" /></a><div class="project-info"><h3>Phi Construction</h3><p>Corporate website with clean information architecture, custom styling and professional service presentation.</p><div class="tags"><span>WordPress</span><span>Elementor</span></div><a class="project-link" href="https://phiconstruction.gr/" target="_blank" rel="noopener">Visit website ↗</a></div></article>
-        <article class="project-card"><a class="project-image" href="https://greeknannies.com/" target="_blank" rel="noopener"><img src="./assets/images/greek-nannies.png" alt="Greek Nannies" /></a><div class="project-info"><h3>Greek Nannies</h3><p>Service website focused on clear navigation, approachable UI and simple content management.</p><div class="tags"><span>WordPress</span><span>Elementor</span></div><a class="project-link" href="https://greeknannies.com/" target="_blank" rel="noopener">Visit website ↗</a></div></article>
-        <article class="project-card"><a class="project-image" href="https://bonnevillerealty.com/" target="_blank" rel="noopener"><img src="./assets/images/bonneville.png" alt="Bonneville Realty Management" /></a><div class="project-info"><h3>Bonneville Realty</h3><p>Property-management website with service-focused content and a responsive, easy-to-navigate layout.</p><div class="tags"><span>WordPress</span><span>Elementor</span></div><a class="project-link" href="https://bonnevillerealty.com/" target="_blank" rel="noopener">Visit website ↗</a></div></article>
-      </div>
-    </section>
+    <div class="container">
+      <header class="hero">
+        <img
+          class="avatar"
+          src="./assets/images/Konstantinos Angelopoulos.jpeg"
+          alt="Konstantinos Angelopoulos"
+        />
+        <h1>Konstantinos Angelopoulos</h1>
+        <p class="subtitle">
+          WordPress Developer • Elementor • WooCommerce • HTML/CSS • JavaScript
+          • Tracking & Events (GTM/Meta/TikTok)
+        </p>
 
-    <section class="section" id="experience">
-      <div class="section-heading"><div><p class="eyebrow">Career</p><h2>Professional experience</h2></div><a class="text-link" href="https://www.linkedin.com/in/konstantinos-angelopoulos-b0b09991/" target="_blank" rel="noopener">Full profile on LinkedIn ↗</a></div>
-      <div class="timeline">
-        <article class="experience-item"><div class="experience-meta"><p>Core Concepts</p><span>2026 — Present</span></div><div><h3>Web Developer</h3><p>Building and refining responsive WordPress websites for clients across different industries. Translating creative direction and business requirements into complete Elementor implementations, custom layouts and dependable user experiences.</p><ul><li>Develop complete client websites in WordPress and Elementor.</li><li>Implement responsive interfaces and custom CSS across desktop, tablet and mobile.</li><li>Collaborate on content structure, UI details, testing and launch preparation.</li></ul></div></article>
-        <article class="experience-item"><div class="experience-meta"><p>ArtAbout eCommerce Agency</p><span>2025 — 2026</span></div><div><h3>Junior Web Developer</h3><p>Developed and customised WordPress websites using Elementor, HTML and CSS, working with designers and project managers to deliver client projects.</p><ul><li>Built responsive layouts and improved UI/UX with custom CSS.</li><li>Configured forms, SEO tools and supporting WordPress plugins.</li><li>Tested and debugged websites for consistent performance and functionality.</li></ul></div></article>
-        <article class="experience-item"><div class="experience-meta"><p>Ajul Luxury Hotel & Spa Resort</p><span>2024</span></div><div><h3>Bellhop</h3><p>Delivered five-star guest service in a busy luxury-resort environment, coordinating with the Front Office and communicating with an international clientele.</p></div></article>
-        <article class="experience-item"><div class="experience-meta"><p>Vaia Talent</p><span>2022 — 2024</span></div><div><h3>Talent Sourcer</h3><p>Sourced candidates through professional networks, maintained talent pipelines and ATS records, and collaborated with the sourcing team to meet quality and volume targets.</p></div></article>
-      </div>
-    </section>
+        <div class="hero-actions">
+          <a class="primary" href="#projects">View Projects</a>
+          <a class="secondary" href="./public/contact.html">Contact</a>
+        </div>
+      </header>
 
-    <section class="section split" id="skills">
-      <div><p class="eyebrow">Capabilities</p><h2>Skills & tools</h2><p class="section-copy">Focused on practical WordPress delivery—from page building and responsive styling to launch checks, analytics and ongoing refinement.</p></div>
-      <div class="skill-groups"><div><h3>Development</h3><p>WordPress · Elementor · HTML5 · CSS3 · JavaScript · PHP basics · Responsive development</p></div><div><h3>WordPress ecosystem</h3><p>WooCommerce · ACF · Custom Post Types · WPForms · SMTP · Astra · SEO plugins</p></div><div><h3>Optimisation</h3><p>On-page SEO · Performance · Caching · Image optimisation · Responsive QA · Debugging</p></div><div><h3>Analytics</h3><p>GA4 · Google Tag Manager · Meta Pixel · TikTok Pixel · Custom events</p></div></div>
-    </section>
+      <section class="card" id="summary">
+        <h2>Summary</h2>
+        <p>
+          WordPress Developer with a background in Computer Science and hands-on
+          experience in building conversion-focused landing pages, WooCommerce
+          stores, and responsive UIs using WordPress, Elementor, HTML, CSS, and
+          JavaScript. Experienced in tracking setup (GTM, Meta Pixel, TikTok
+          Pixel) and custom events for CTAs, forms, and ecommerce actions.
+          Proficient in responsive layouts, form validation, and UX
+          micro-interactions.
+        </p>
 
-    <section class="section education" id="education"><div><p class="eyebrow">Education</p><h2>BSc in Computer Science</h2></div><div><h3>International Hellenic University</h3><p>Serres · Graduate, December 2025 · Grade 6.60 / 10</p><p class="muted">Thesis: Search Algorithms—Sequential, Binary and Hash Table; visualisation and efficiency comparison.</p></div></section>
+        <div class="chips">
+          <span class="chip">WordPress</span>
+          <span class="chip">Elementor</span>
+          <span class="chip">WooCommerce</span>
+          <span class="chip">HTML</span>
+          <span class="chip">CSS</span>
+          <span class="chip">JavaScript</span>
+          <span class="chip">GTM</span>
+          <span class="chip">Meta Pixel</span>
+          <span class="chip">TikTok Pixel</span>
+        </div>
+      </section>
 
-    <section class="contact" id="contact"><p class="eyebrow">Let’s talk</p><h2>Have a project or an opportunity in mind?</h2><p>I’m available for WordPress and Elementor projects, collaborations and web-development roles.</p><div class="contact-actions"><a class="button light" href="mailto:kotsaggelop@gmail.com">kotsaggelop@gmail.com</a><a class="button outline-light" href="tel:+306980409554">+30 698 040 9554</a><a class="button outline-light" href="https://www.linkedin.com/in/konstantinos-angelopoulos-b0b09991/" target="_blank" rel="noopener">LinkedIn ↗</a></div></section>
-  </main>
-  <footer class="footer"><p>© 2026 Konstantinos Angelopoulos</p><a href="#top">Back to top ↑</a></footer>
-  <script src="./app.js"></script>
-</body>
+      <section class="card" id="projects">
+        <div class="section-head">
+          <h2>Projects</h2>
+          <p class="muted">Client work + personal projects</p>
+        </div>
+
+        <div class="projects-grid">
+          <article class="project-card-new">
+            <div class="project-img-container">
+              <img
+                src="./assets/images/image_a9610b.png"
+                alt="Groovebox.gr Radio"
+                class="project-img"
+              />
+            </div>
+            <div class="project-info">
+              <h3>Groovebox.gr</h3>
+              <p>
+                Personal web radio project featuring automated stream scheduling
+                and a custom UI for music playback.
+              </p>
+              <a class="link" href="https://groovebox.gr/" target="_blank"
+                >Visit site →</a
+              >
+            </div>
+          </article>
+
+          <article class="project-card-new">
+            <div class="project-img-container">
+              <img
+                src="./assets/images/pasxos.png"
+                alt="Art of Glass"
+                class="project-img"
+              />
+            </div>
+            <div class="project-info">
+              <h3>Art of Glass</h3>
+              <p>
+                Business website built with WordPress/Elementor, featuring a
+                responsive layout and SEO-friendly structure.
+              </p>
+              <a class="link" href="https://artofglass.gr/" target="_blank"
+                >Visit site →</a
+              >
+            </div>
+          </article>
+
+          <article class="project-card-new">
+            <div class="project-img-container">
+              <img
+                src="./assets/images/porto-psakoudia.png"
+                alt="Porto Psakoudia"
+                class="project-img"
+              />
+            </div>
+            <div class="project-info">
+              <h3>Porto Psakoudia</h3>
+              <p>
+                Hospitality website with significant UX improvements and
+                performance optimization.
+              </p>
+              <a class="link" href="https://portopsakoudia.gr/" target="_blank"
+                >Visit site →</a
+              >
+            </div>
+          </article>
+
+          <article class="project-card-new">
+            <div class="project-img-container">
+              <img
+                src="./assets/images/phi-construction.png"
+                alt="Phi Construction"
+                class="project-img"
+              />
+            </div>
+            <div class="project-info">
+              <h3>Phi Construction</h3>
+              <p>
+                Corporate site with clean structure, custom styling, and
+                professional service presentation.
+              </p>
+              <a class="link" href="https://phiconstruction.gr/" target="_blank"
+                >Visit site →</a
+              >
+            </div>
+          </article>
+
+          <article class="project-card-new">
+            <div class="project-img-container">
+              <img
+                src="./assets/images/greek-nannies.png"
+                alt="Greek Nannies"
+                class="project-img"
+              />
+            </div>
+            <div class="project-info">
+              <h3>Greek Nannies</h3>
+              <p>
+                Service-based website focusing on clean UI and easy content
+                management.
+              </p>
+              <a class="link" href="https://greeknannies.com/" target="_blank"
+                >Visit site →</a
+              >
+            </div>
+          </article>
+
+          <article class="project-card-new">
+            <div class="project-img-container">
+              <img
+                src="./assets/images/bonneville.png"
+                alt="Bonneville Realty Management"
+                class="project-img"
+              />
+            </div>
+            <div class="project-info">
+              <h3>Bonneville Realty Management</h3>
+              <p>
+                Property management website built with WordPress/Elementor,
+                featuring a clean structure, service-focused content, and a
+                responsive user experience.
+              </p>
+              <a class="link" href="https://bonnevillerealty.com/" target="_blank"
+                >Visit site →</a
+              >
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="card" id="experience">
+        <h2>Professional Experience</h2>
+
+        <div class="experience-item">
+          <h3>Junior Web Developer — ArtAbout eCommerce Agency</h3>
+          <p class="muted">January 2025 – July 2025</p>
+          <ul>
+            <li>
+              Developed and customized WordPress websites using Elementor, HTML,
+              and CSS.
+            </li>
+            <li>
+              Created responsive layouts ensuring seamless display across
+              desktop, tablet, and mobile devices.
+            </li>
+            <li>
+              Applied custom CSS to enhance visual appeal and User Experience
+              (UI/UX).
+            </li>
+            <li>
+              Integrated plugins for features like contact forms, SEO, and
+              additional site functionality.
+            </li>
+            <li>
+              Collaborated with designers and project managers to deliver web
+              projects tailored to client needs.
+            </li>
+            <li>
+              Participated in website testing and debugging to ensure optimal
+              performance and functionality.
+            </li>
+          </ul>
+        </div>
+
+        <hr class="separator" />
+
+        <div class="experience-item">
+          <h3>Bellhop — Ajul Luxury Hotel & Spa Resort</h3>
+          <p class="muted">June 2024 – November 2024</p>
+          <ul>
+            <li>
+              Provided five-star reception experiences in a luxury 166-room
+              resort using electric golf carts.
+            </li>
+            <li>
+              Coordinated with the Front Office to optimize check-in/out
+              processes and handle urgent requests.
+            </li>
+            <li>Briefed guests on facility amenities and safety protocols.</li>
+            <li>
+              Delivered high-quality service in a multicultural environment with
+              professional communication.
+            </li>
+          </ul>
+        </div>
+
+        <hr class="separator" />
+
+        <div class="experience-item">
+          <h3>Talent Sourcer — Vaia Talent</h3>
+          <p class="muted">July 2022 – May 2024</p>
+          <ul>
+            <li>
+              Identified candidate profiles using modern sourcing methods and
+              specialized tools.
+            </li>
+            <li>
+              Sourced candidates across professional networks and social media
+              platforms.
+            </li>
+            <li>
+              Developed talent pools and pipelines for recurring job roles.
+            </li>
+            <li>
+              Maintained an accurate and up-to-date Applicant Tracking System
+              (ATS).
+            </li>
+            <li>
+              Collaborated with the Sourcing Lead to meet quality and volume
+              KPIs.
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="card" id="education">
+        <h2>Education</h2>
+        <p><strong>International Hellenic University</strong> — Serres</p>
+        <p>BSc in Computer Science — <strong>Graduate December 2025</strong></p>
+        <p>Grade: <strong>6.60 / 10</strong></p>
+        <ul>
+          <li>
+            Thesis: “Search Algorithms: Sequential, Binary, Hash Table,
+            Visualization & Efficiency Comparison”
+          </li>
+        </ul>
+      </section>
+
+      <section class="card" id="skills">
+        <h2>Skills</h2>
+        <div class="grid-2">
+          <div>
+            <h3>WordPress / Web Development</h3>
+            <ul>
+              <li>WordPress & WooCommerce setup, pages, products</li>
+              <li>Elementor / WPBakery</li>
+              <li>HTML5, CSS3 responsive, mobile-first</li>
+              <li>JavaScript DOM, event listeners, micro-interactions</li>
+              <li>PHP basics</li>
+              <li>Landing pages & Conversion optimization</li>
+              <li>Forms: validation, UX, submit handling</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Tracking & Analytics</h3>
+            <ul>
+              <li>Google Tag Manager setup</li>
+              <li>Meta & TikTok Pixel integration</li>
+              <li>Custom events CTA clicks, add-to-cart</li>
+              <li>SEO fundamentals Yoast, on-page</li>
+              <li>Performance optimization & Caching</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="cta">
+        <h2>Let's work together</h2>
+        <p class="muted">
+          Available for WordPress / Elementor projects and junior web roles.
+        </p>
+        <a class="primary" href="./public/contact.html">Contact Me</a>
+      </section>
+
+      <footer class="footer">
+        <p>© 2026 Konstantinos Angelopoulos</p>
+      </footer>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
 </html>
