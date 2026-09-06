@@ -118,6 +118,19 @@ p { color: var(--muted); }
   .contact { padding: 48px 24px; border-radius: 22px; }
   .contact-actions { align-items: stretch; flex-direction: column; }
   .contact-actions .button { width: 100%; }
+  h1, h2, h3, .button { overflow-wrap: anywhere; }
+  .project-info { padding: 20px; }
+  .project-top { gap: 10px; }
+  .project-top h3 { min-width: 0; }
+  .availability { right: -8px; font-size: .76rem; }
+  .footer { align-items: flex-start; flex-direction: column; }
+}
+@media (max-width: 380px) {
+  .container, .site-nav, .footer { width: min(100% - 20px, 1180px); }
+  .hero, .section, .contact { padding-left: 18px; padding-right: 18px; }
+  .hero-actions { align-items: stretch; flex-direction: column; }
+  .hero-actions .button { width: 100%; }
+  .portrait-wrap { max-width: 220px; }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
