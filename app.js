@@ -15,3 +15,8 @@
   window.addEventListener("resize", update);
   update();
 })();
+
+// SA Designs project cover: use the supplied hero screenshot directly.
+document.querySelectorAll('img[src="./assets/images/sa-designs.svg"]').forEach((img) => {
+  img.src = "./assets/images/sa-designs-hero.jpg";
+});
