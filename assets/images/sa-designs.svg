@@ -1,34 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
-  <title id="title">SA Designs portfolio preview</title>
-  <desc id="desc">A clean architectural-style preview for the SA Designs residential design website.</desc>
-  <rect width="1600" height="900" fill="#f2efe8"/>
-  <rect x="58" y="58" width="1484" height="784" rx="18" fill="#fbfaf7" stroke="#d6d0c4" stroke-width="2"/>
-  <g fill="#171714" font-family="Arial, Helvetica, sans-serif">
-    <text x="105" y="130" font-size="30" font-weight="700" letter-spacing="3">SA DESIGNS</text>
-    <text x="1115" y="130" font-size="16" letter-spacing="1.2">WORK</text>
-    <text x="1210" y="130" font-size="16" letter-spacing="1.2">SERVICES</text>
-    <text x="1335" y="130" font-size="16" letter-spacing="1.2">CONTACT</text>
-    <text x="105" y="290" font-size="24" letter-spacing="2">RESIDENTIAL DESIGN · LOS ANGELES</text>
-    <text x="105" y="382" font-size="64" font-weight="600">Every project,</text>
-    <text x="105" y="455" font-size="64" font-weight="600">designed with intention.</text>
-    <text x="105" y="525" font-size="22" fill="#5c5a54">New homes · Additions · ADUs · Remodels · Permitting</text>
-    <rect x="105" y="590" width="182" height="54" rx="27" fill="#171714"/>
-    <text x="145" y="624" font-size="16" fill="#fbfaf7" font-weight="700" letter-spacing="1">VIEW WORK</text>
-  </g>
-  <g transform="translate(920 245)" fill="none" stroke="#292823" stroke-width="5">
-    <path d="M20 350 L20 180 L220 45 L420 180 L420 350"/>
-    <path d="M90 350 V220 H205 V350"/>
-    <path d="M265 350 V205 H350 V350"/>
-    <path d="M220 45 V350" opacity=".35"/>
-    <path d="M20 180 H420" opacity=".35"/>
-    <path d="M460 350 V135 H610 V350"/>
-    <path d="M460 135 L535 75 L610 135"/>
-  </g>
-  <line x1="105" y1="745" x2="1495" y2="745" stroke="#d6d0c4" stroke-width="2"/>
-  <g fill="#77736b" font-family="Arial, Helvetica, sans-serif" font-size="16" letter-spacing="1.2">
-    <text x="105" y="790">WORDPRESS</text>
-    <text x="265" y="790">RESPONSIVE</text>
-    <text x="455" y="790">MULTI-PAGE</text>
-    <text x="1380" y="790">2026</text>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" preserveAspectRatio="xMidYMid slice" role="img" aria-labelledby="title desc">
+  <title id="title">SA Designs hero screenshot</title>
+  <desc id="desc">Screenshot from the SA Designs homepage hero.</desc>
+  <image href="./sa-designs-hero.jpg" x="0" y="0" width="960" height="540" preserveAspectRatio="xMidYMid slice" />
 </svg>
