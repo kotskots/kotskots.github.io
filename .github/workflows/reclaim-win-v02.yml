@@ -1,0 +1,55 @@
+name: Temporary Reclaim Windows v0.2 Build
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/reclaim-win-v02.yml'
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout build branch
+        uses: actions/checkout@v4
+        with:
+          ref: reclaim-v03-build
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Verify and extract source
+        shell: pwsh
+        run: |
+          $zip = '.reclaim-win-v02\ReclaimWindows-v0.2-source.zip'
+          if (-not (Test-Path $zip)) { throw 'Source ZIP missing' }
+          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+          if ($hash -ne '560febd65a74cf0e22dd57e5bde399f32d3a030ab5437014b7d11cb414f61459') { throw "Source hash mismatch: $hash" }
+          Remove-Item -Recurse -Force "$env:RUNNER_TEMP\reclaim-win-v02" -ErrorAction SilentlyContinue
+          Expand-Archive -Path $zip -DestinationPath "$env:RUNNER_TEMP\reclaim-win-v02" -Force
+          if (-not (Test-Path "$env:RUNNER_TEMP\reclaim-win-v02\ReclaimWindows\ReclaimWindows.csproj")) { throw 'Project missing' }
+
+      - name: Build Windows x64 single-file app
+        shell: pwsh
+        run: |
+          $proj = "$env:RUNNER_TEMP\reclaim-win-v02\ReclaimWindows\ReclaimWindows.csproj"
+          dotnet publish $proj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:DebugType=None -p:DebugSymbols=false
+          $exe = "$env:RUNNER_TEMP\reclaim-win-v02\ReclaimWindows\bin\Release\net8.0-windows\win-x64\publish\ReclaimWindows.exe"
+          if (-not (Test-Path $exe)) { throw 'ReclaimWindows.exe not produced' }
+          Copy-Item $exe "$env:RUNNER_TEMP\ReclaimWindows-v0.2.exe"
+          Copy-Item "$env:RUNNER_TEMP\reclaim-win-v02\README.txt" "$env:RUNNER_TEMP\ReclaimWindows-v0.2-README.txt"
+          Get-FileHash "$env:RUNNER_TEMP\ReclaimWindows-v0.2.exe" -Algorithm SHA256
+          Get-Item "$env:RUNNER_TEMP\ReclaimWindows-v0.2.exe" | Format-List Name,Length,VersionInfo
+
+      - name: Upload Windows app
+        uses: actions/upload-artifact@v4
+        with:
+          name: ReclaimWindows-v0.2
+          path: |
+            ${{ runner.temp }}\ReclaimWindows-v0.2.exe
+            ${{ runner.temp }}\ReclaimWindows-v0.2-README.txt
+          if-no-files-found: error
