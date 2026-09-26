@@ -1,0 +1,100 @@
+name: Temporary Reclaim v0.2 Sign Fix
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/reclaim-v02-signfix.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+    steps:
+      - name: Checkout build branch
+        uses: actions/checkout@v4
+        with:
+          ref: reclaim-apk-build-v01
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android SDK
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Reassemble source
+        run: |
+          cat .reclaim-v02/part* > /tmp/reclaim-v02.b64
+          base64 --decode /tmp/reclaim-v02.b64 > /tmp/Reclaim-v0.2-source.zip
+          unzip -q /tmp/Reclaim-v0.2-source.zip -d /tmp/reclaim-v02-src
+          test -f /tmp/reclaim-v02-src/Reclaim/app/build.gradle.kts
+
+      - name: Build unsigned release APK
+        working-directory: /tmp/reclaim-v02-src/Reclaim
+        run: gradle --no-daemon :app:assembleRelease --stacktrace
+
+      - name: Generate permanent signing key and sign APK
+        run: |
+          set -euo pipefail
+          PASS=$(openssl rand -hex 24)
+          echo "$PASS" > /tmp/reclaim-keystore-password.txt
+          keytool -genkeypair -v \
+            -keystore /tmp/reclaim-release.jks \
+            -storepass "$PASS" \
+            -keypass "$PASS" \
+            -alias reclaim \
+            -keyalg RSA -keysize 4096 -validity 10000 \
+            -dname "CN=Reclaim Personal App, OU=Personal, O=Reclaim, L=Thessaloniki, C=GR"
+
+          UNSIGNED=/tmp/reclaim-v02-src/Reclaim/app/build/outputs/apk/release/app-release-unsigned.apk
+          ALIGNED=/tmp/Reclaim-v0.2-aligned.apk
+          SIGNED=/tmp/Reclaim-v0.2.apk
+          ZIPALIGN="$ANDROID_HOME/build-tools/35.0.0/zipalign"
+          APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+
+          "$ZIPALIGN" -p -f 4 "$UNSIGNED" "$ALIGNED"
+          "$APKSIGNER" sign \
+            --ks /tmp/reclaim-release.jks \
+            --ks-key-alias reclaim \
+            --ks-pass "pass:$PASS" \
+            --key-pass "pass:$PASS" \
+            --v1-signing-enabled true \
+            --v2-signing-enabled true \
+            --v3-signing-enabled true \
+            --out "$SIGNED" \
+            "$ALIGNED"
+
+          "$APKSIGNER" verify --verbose --print-certs "$SIGNED" | tee /tmp/reclaim-apksigner-verify.txt
+          "$ZIPALIGN" -c -v 4 "$SIGNED"
+          keytool -list -v -keystore /tmp/reclaim-release.jks -storepass "$PASS" -alias reclaim > /tmp/reclaim-signing-certificate.txt
+          cd /tmp
+          zip -q Reclaim-signing-backup-v0.2.zip reclaim-release.jks reclaim-keystore-password.txt reclaim-signing-certificate.txt reclaim-apksigner-verify.txt
+
+      - name: Upload signed APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Reclaim-v0.2-signed
+          path: /tmp/Reclaim-v0.2.apk
+          if-no-files-found: error
+
+      - name: Upload signing backup
+        uses: actions/upload-artifact@v4
+        with:
+          name: Reclaim-signing-backup-v0.2
+          path: /tmp/Reclaim-signing-backup-v0.2.zip
+          if-no-files-found: error
