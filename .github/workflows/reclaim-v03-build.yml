@@ -1,4 +1,4 @@
-name: Temporary Reclaim v0.3 Build
+name: Temporary Reclaim v0.3 Android Build
 
 on:
   push:
@@ -20,40 +20,56 @@ jobs:
         with:
           ref: reclaim-v03-build
 
-      - name: Set up Java 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Install Android SDK
+      - name: Verify payload chunk hashes
+        shell: bash
         run: |
-          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          yes | "$SDKMANAGER" --licenses >/dev/null || true
-          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" "platform-tools"
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.9'
+          set -euo pipefail
+          sha256sum .reclaim-v03/android/part*
+          echo '1e53a770b0167be9abf75eee1d7fe9e2cae97647fa0ccb47ece114376d11793b  .reclaim-v03/android/part00' | sha256sum -c -
+          echo '4394685abf7a888fe51577f5ff4a15ff32f8ae5122e4fb41d7d660f0e148416e  .reclaim-v03/android/part01' | sha256sum -c -
+          echo '6f251e9a9afcb720ceacf5fb09c56ab5e134c1049b7ae4af958cfa6ccfa5ca48  .reclaim-v03/android/part02' | sha256sum -c -
+          echo 'efc31b61d8941775246a9ab52be1180e8045e1b34e7d35cdf27f8d7c10e5a0a6  .reclaim-v03/android/part03' | sha256sum -c -
+          echo '252cf1321f9813dd6c162292fedb7b3b59a768c7d03178f7d0cbcdf3387ae04c  .reclaim-v03/android/part04' | sha256sum -c -
+          echo '930f0f572e93f2059d8d7761b56d55313fcfd13f2371c812c10981db55ead23e  .reclaim-v03/android/part05' | sha256sum -c -
+          echo 'b7b10056f6fc6bad1f46f4bfbeba7e8eb36af8623977cba212ea1c8dc289977f  .reclaim-v03/android/part06' | sha256sum -c -
 
       - name: Reconstruct and verify Android source
+        shell: bash
         run: |
           set -euo pipefail
           cat .reclaim-v03/android/part* > /tmp/reclaim-v03.b64
           base64 --decode /tmp/reclaim-v03.b64 > /tmp/Reclaim-v0.3-source.zip
+          echo 'db05faf70c99224857edfe4a85a751bc3cc2fbcee09772a73542333f7c2993bf  /tmp/Reclaim-v0.3-source.zip' | sha256sum -c -
           unzip -t /tmp/Reclaim-v0.3-source.zip
           rm -rf /tmp/reclaim-v03
           mkdir -p /tmp/reclaim-v03
           unzip -q /tmp/Reclaim-v0.3-source.zip -d /tmp/reclaim-v03
           test -f /tmp/reclaim-v03/Reclaim/app/build.gradle.kts
 
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android SDK
+        shell: bash
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-version: '8.9'
+
       - name: Build Android release
         working-directory: /tmp/reclaim-v03/Reclaim
         run: gradle --no-daemon :app:assembleRelease --stacktrace
 
       - name: Download permanent v0.2 signing key
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: Reclaim-signing-backup-v0.2
           path: /tmp/reclaim-signing-artifact
@@ -62,6 +78,7 @@ jobs:
           run-id: 36263273293
 
       - name: Sign and verify Android APK
+        shell: bash
         run: |
           set -euo pipefail
           mkdir -p /tmp/reclaim-signing
@@ -82,8 +99,7 @@ jobs:
             --v1-signing-enabled true \
             --v2-signing-enabled true \
             --v3-signing-enabled true \
-            --out "$SIGNED" \
-            "$ALIGNED"
+            --out "$SIGNED" "$ALIGNED"
           "$APKSIGNER" verify --verbose --print-certs "$SIGNED" | tee /tmp/Reclaim-v0.3-signature.txt
           "$ZIPALIGN" -c -v 4 "$SIGNED"
           "$AAPT" dump badging "$SIGNED" | head -n 3 | tee /tmp/Reclaim-v0.3-package.txt
@@ -96,52 +112,4 @@ jobs:
         with:
           name: Reclaim-v0.3-Android
           path: /tmp/Reclaim-v0.3.apk
-          if-no-files-found: error
-
-  windows:
-    runs-on: windows-latest
-    timeout-minutes: 35
-    steps:
-      - name: Checkout build branch
-        uses: actions/checkout@v4
-        with:
-          ref: reclaim-v03-build
-
-      - name: Set up .NET 8
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: Reconstruct and verify Windows source
-        shell: pwsh
-        run: |
-          $parts = Get-ChildItem ".reclaim-v03\windows\part*" | Sort-Object Name
-          if ($parts.Count -ne 2) { throw "Expected 2 Windows payload chunks, found $($parts.Count)" }
-          $text = ($parts | ForEach-Object { Get-Content $_.FullName -Raw }) -join ""
-          $bytes = [Convert]::FromBase64String($text)
-          $zip = "$env:RUNNER_TEMP\ReclaimWindows-v0.1-source.zip"
-          [IO.File]::WriteAllBytes($zip, $bytes)
-          Remove-Item -Recurse -Force "$env:RUNNER_TEMP\reclaim-win" -ErrorAction SilentlyContinue
-          New-Item -ItemType Directory -Force "$env:RUNNER_TEMP\reclaim-win" | Out-Null
-          Expand-Archive -Path $zip -DestinationPath "$env:RUNNER_TEMP\reclaim-win" -Force
-          if (-not (Test-Path "$env:RUNNER_TEMP\reclaim-win\ReclaimWindows\ReclaimWindows.csproj")) { throw "Windows project missing" }
-
-      - name: Build Windows x64 app
-        shell: pwsh
-        run: |
-          $proj = "$env:RUNNER_TEMP\reclaim-win\ReclaimWindows\ReclaimWindows.csproj"
-          dotnet publish $proj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:DebugType=None -p:DebugSymbols=false
-          $exe = "$env:RUNNER_TEMP\reclaim-win\ReclaimWindows\bin\Release\net8.0-windows\win-x64\publish\ReclaimWindows.exe"
-          if (-not (Test-Path $exe)) { throw "ReclaimWindows.exe not produced" }
-          Copy-Item $exe "$env:RUNNER_TEMP\ReclaimWindows-v0.1.exe"
-          Copy-Item "$env:RUNNER_TEMP\reclaim-win\README.txt" "$env:RUNNER_TEMP\ReclaimWindows-README.txt"
-          Get-Item "$env:RUNNER_TEMP\ReclaimWindows-v0.1.exe" | Format-List Name,Length,VersionInfo
-
-      - name: Upload Windows app
-        uses: actions/upload-artifact@v4
-        with:
-          name: ReclaimWindows-v0.1
-          path: |
-            ${{ runner.temp }}\ReclaimWindows-v0.1.exe
-            ${{ runner.temp }}\ReclaimWindows-README.txt
           if-no-files-found: error
