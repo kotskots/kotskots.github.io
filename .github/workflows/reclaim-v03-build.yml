@@ -37,11 +37,15 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Extract Android source
+      - name: Reconstruct and verify Android source
         run: |
+          set -euo pipefail
+          cat .reclaim-v03/android/part* > /tmp/reclaim-v03.b64
+          base64 --decode /tmp/reclaim-v03.b64 > /tmp/Reclaim-v0.3-source.zip
+          unzip -t /tmp/Reclaim-v0.3-source.zip
           rm -rf /tmp/reclaim-v03
           mkdir -p /tmp/reclaim-v03
-          unzip -q .reclaim-v03/Reclaim-v0.3-source.zip -d /tmp/reclaim-v03
+          unzip -q /tmp/Reclaim-v0.3-source.zip -d /tmp/reclaim-v03
           test -f /tmp/reclaim-v03/Reclaim/app/build.gradle.kts
 
       - name: Build Android release
@@ -85,6 +89,7 @@ jobs:
           "$AAPT" dump badging "$SIGNED" | head -n 3 | tee /tmp/Reclaim-v0.3-package.txt
           grep -q "package: name='com.kostas.reclaim' versionCode='3' versionName='0.3.0'" /tmp/Reclaim-v0.3-package.txt
           grep -q "Verified using v2 scheme (APK Signature Scheme v2): true" /tmp/Reclaim-v0.3-signature.txt
+          grep -q "Verified using v3 scheme (APK Signature Scheme v3): true" /tmp/Reclaim-v0.3-signature.txt
 
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
@@ -107,12 +112,18 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Extract Windows source
+      - name: Reconstruct and verify Windows source
         shell: pwsh
         run: |
+          $parts = Get-ChildItem ".reclaim-v03\windows\part*" | Sort-Object Name
+          if ($parts.Count -ne 2) { throw "Expected 2 Windows payload chunks, found $($parts.Count)" }
+          $text = ($parts | ForEach-Object { Get-Content $_.FullName -Raw }) -join ""
+          $bytes = [Convert]::FromBase64String($text)
+          $zip = "$env:RUNNER_TEMP\ReclaimWindows-v0.1-source.zip"
+          [IO.File]::WriteAllBytes($zip, $bytes)
           Remove-Item -Recurse -Force "$env:RUNNER_TEMP\reclaim-win" -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Force "$env:RUNNER_TEMP\reclaim-win" | Out-Null
-          Expand-Archive -Path ".reclaim-v03\ReclaimWindows-v0.1-source.zip" -DestinationPath "$env:RUNNER_TEMP\reclaim-win" -Force
+          Expand-Archive -Path $zip -DestinationPath "$env:RUNNER_TEMP\reclaim-win" -Force
           if (-not (Test-Path "$env:RUNNER_TEMP\reclaim-win\ReclaimWindows\ReclaimWindows.csproj")) { throw "Windows project missing" }
 
       - name: Build Windows x64 app
