@@ -1,0 +1,136 @@
+name: Temporary Reclaim v0.3 Build
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/reclaim-v03-build.yml'
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+    steps:
+      - name: Checkout build branch
+        uses: actions/checkout@v4
+        with:
+          ref: reclaim-v03-build
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android SDK
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Extract Android source
+        run: |
+          rm -rf /tmp/reclaim-v03
+          mkdir -p /tmp/reclaim-v03
+          unzip -q .reclaim-v03/Reclaim-v0.3-source.zip -d /tmp/reclaim-v03
+          test -f /tmp/reclaim-v03/Reclaim/app/build.gradle.kts
+
+      - name: Build Android release
+        working-directory: /tmp/reclaim-v03/Reclaim
+        run: gradle --no-daemon :app:assembleRelease --stacktrace
+
+      - name: Download permanent v0.2 signing key
+        uses: actions/download-artifact@v4
+        with:
+          name: Reclaim-signing-backup-v0.2
+          path: /tmp/reclaim-signing-artifact
+          github-token: ${{ github.token }}
+          repository: kotskots/kotskots.github.io
+          run-id: 36263273293
+
+      - name: Sign and verify Android APK
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/reclaim-signing
+          unzip -q /tmp/reclaim-signing-artifact/Reclaim-signing-backup-v0.2.zip -d /tmp/reclaim-signing
+          PASS=$(cat /tmp/reclaim-signing/reclaim-keystore-password.txt)
+          UNSIGNED=/tmp/reclaim-v03/Reclaim/app/build/outputs/apk/release/app-release-unsigned.apk
+          ALIGNED=/tmp/Reclaim-v0.3-aligned.apk
+          SIGNED=/tmp/Reclaim-v0.3.apk
+          ZIPALIGN="$ANDROID_HOME/build-tools/35.0.0/zipalign"
+          APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
+          "$ZIPALIGN" -p -f 4 "$UNSIGNED" "$ALIGNED"
+          "$APKSIGNER" sign \
+            --ks /tmp/reclaim-signing/reclaim-release.jks \
+            --ks-key-alias reclaim \
+            --ks-pass "pass:$PASS" \
+            --key-pass "pass:$PASS" \
+            --v1-signing-enabled true \
+            --v2-signing-enabled true \
+            --v3-signing-enabled true \
+            --out "$SIGNED" \
+            "$ALIGNED"
+          "$APKSIGNER" verify --verbose --print-certs "$SIGNED" | tee /tmp/Reclaim-v0.3-signature.txt
+          "$ZIPALIGN" -c -v 4 "$SIGNED"
+          "$AAPT" dump badging "$SIGNED" | head -n 3 | tee /tmp/Reclaim-v0.3-package.txt
+          grep -q "package: name='com.kostas.reclaim' versionCode='3' versionName='0.3.0'" /tmp/Reclaim-v0.3-package.txt
+          grep -q "Verified using v2 scheme (APK Signature Scheme v2): true" /tmp/Reclaim-v0.3-signature.txt
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Reclaim-v0.3-Android
+          path: /tmp/Reclaim-v0.3.apk
+          if-no-files-found: error
+
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout build branch
+        uses: actions/checkout@v4
+        with:
+          ref: reclaim-v03-build
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Extract Windows source
+        shell: pwsh
+        run: |
+          Remove-Item -Recurse -Force "$env:RUNNER_TEMP\reclaim-win" -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force "$env:RUNNER_TEMP\reclaim-win" | Out-Null
+          Expand-Archive -Path ".reclaim-v03\ReclaimWindows-v0.1-source.zip" -DestinationPath "$env:RUNNER_TEMP\reclaim-win" -Force
+          if (-not (Test-Path "$env:RUNNER_TEMP\reclaim-win\ReclaimWindows\ReclaimWindows.csproj")) { throw "Windows project missing" }
+
+      - name: Build Windows x64 app
+        shell: pwsh
+        run: |
+          $proj = "$env:RUNNER_TEMP\reclaim-win\ReclaimWindows\ReclaimWindows.csproj"
+          dotnet publish $proj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:DebugType=None -p:DebugSymbols=false
+          $exe = "$env:RUNNER_TEMP\reclaim-win\ReclaimWindows\bin\Release\net8.0-windows\win-x64\publish\ReclaimWindows.exe"
+          if (-not (Test-Path $exe)) { throw "ReclaimWindows.exe not produced" }
+          Copy-Item $exe "$env:RUNNER_TEMP\ReclaimWindows-v0.1.exe"
+          Copy-Item "$env:RUNNER_TEMP\reclaim-win\README.txt" "$env:RUNNER_TEMP\ReclaimWindows-README.txt"
+          Get-Item "$env:RUNNER_TEMP\ReclaimWindows-v0.1.exe" | Format-List Name,Length,VersionInfo
+
+      - name: Upload Windows app
+        uses: actions/upload-artifact@v4
+        with:
+          name: ReclaimWindows-v0.1
+          path: |
+            ${{ runner.temp }}\ReclaimWindows-v0.1.exe
+            ${{ runner.temp }}\ReclaimWindows-README.txt
+          if-no-files-found: error
