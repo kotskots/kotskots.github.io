@@ -25,9 +25,8 @@ jobs:
       - name: Reconstruct and verify source
         shell: pwsh
         run: |
-          $parts = Get-ChildItem '.reclaim-win-v03\part*' | Sort-Object Name
-          if ($parts.Count -ne 3) { throw "Expected 3 chunks, found $($parts.Count)" }
-          $b64 = ($parts | ForEach-Object { Get-Content $_.FullName -Raw }) -join ''
+          $names = @('part00','part01a','part01b','part02')
+          $b64 = ($names | ForEach-Object { Get-Content (Join-Path '.reclaim-win-v03' $_) -Raw }) -join ''
           $zip = "$env:RUNNER_TEMP\ReclaimWindows-v0.3-alpha1-source.zip"
           [IO.File]::WriteAllBytes($zip, [Convert]::FromBase64String($b64))
           $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
