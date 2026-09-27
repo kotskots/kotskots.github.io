@@ -1,0 +1,59 @@
+name: Temporary Reclaim Windows v0.3 alpha Build
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/reclaim-win-v03-alpha.yml'
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout build branch
+        uses: actions/checkout@v4
+        with:
+          ref: reclaim-win-v03-alpha-build2
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Reconstruct and verify source
+        shell: pwsh
+        run: |
+          $parts = Get-ChildItem '.reclaim-win-v03\part*' | Sort-Object Name
+          if ($parts.Count -ne 3) { throw "Expected 3 chunks, found $($parts.Count)" }
+          $b64 = ($parts | ForEach-Object { Get-Content $_.FullName -Raw }) -join ''
+          $zip = "$env:RUNNER_TEMP\ReclaimWindows-v0.3-alpha1-source.zip"
+          [IO.File]::WriteAllBytes($zip, [Convert]::FromBase64String($b64))
+          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+          if ($hash -ne 'a79853c679f016046968ae628d04c7f46ff8bd7bcca607efaf8c02a44af020b1') { throw "Source hash mismatch: $hash" }
+          $dst = "$env:RUNNER_TEMP\reclaim-win-v03"
+          Remove-Item -Recurse -Force $dst -ErrorAction SilentlyContinue
+          Expand-Archive -Path $zip -DestinationPath $dst -Force
+          if (-not (Test-Path "$dst\ReclaimWindows\ReclaimWindows.csproj")) { throw 'Project missing' }
+
+      - name: Build Windows x64 single-file app
+        shell: pwsh
+        run: |
+          $proj = "$env:RUNNER_TEMP\reclaim-win-v03\ReclaimWindows\ReclaimWindows.csproj"
+          dotnet publish $proj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:DebugType=None -p:DebugSymbols=false
+          $exe = "$env:RUNNER_TEMP\reclaim-win-v03\ReclaimWindows\bin\Release\net8.0-windows\win-x64\publish\ReclaimWindows.exe"
+          if (-not (Test-Path $exe)) { throw 'ReclaimWindows.exe not produced' }
+          Copy-Item $exe "$env:RUNNER_TEMP\ReclaimWindows-v0.3-alpha1.exe"
+          Copy-Item "$env:RUNNER_TEMP\reclaim-win-v03\README.txt" "$env:RUNNER_TEMP\ReclaimWindows-v0.3-alpha1-README.txt"
+          Get-FileHash "$env:RUNNER_TEMP\ReclaimWindows-v0.3-alpha1.exe" -Algorithm SHA256
+          Get-Item "$env:RUNNER_TEMP\ReclaimWindows-v0.3-alpha1.exe" | Format-List Name,Length,VersionInfo
+
+      - name: Upload Windows app
+        uses: actions/upload-artifact@v4
+        with:
+          name: ReclaimWindows-v0.3-alpha1
+          path: |
+            ${{ runner.temp }}\ReclaimWindows-v0.3-alpha1.exe
+            ${{ runner.temp }}\ReclaimWindows-v0.3-alpha1-README.txt
+          if-no-files-found: error
