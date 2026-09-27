@@ -39,7 +39,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat .reclaim-v04-beta1b/part* > /tmp/reclaim-beta-patch.b64
+          { head -c 4261 .reclaim-v04-beta1b/part00; printf 'w'; tail -c +4262 .reclaim-v04-beta1b/part00; cat .reclaim-v04-beta1b/part01 .reclaim-v04-beta1b/part02 .reclaim-v04-beta1b/part03 .reclaim-v04-beta1b/part04 .reclaim-v04-beta1b/part05 .reclaim-v04-beta1b/part06; } > /tmp/reclaim-beta-patch.b64
+          test "$(wc -c < /tmp/reclaim-beta-patch.b64)" -eq 48364
           base64 --decode /tmp/reclaim-beta-patch.b64 > /tmp/reclaim-v04-beta1.patch.gz
           echo 'fba2c66f00ee626080b183da93b0a8b4266fe0ddd56e49346762ed77e954e6b2  /tmp/reclaim-v04-beta1.patch.gz' | sha256sum -c -
           gzip -dc /tmp/reclaim-v04-beta1.patch.gz > /tmp/reclaim-v04-beta1.patch
