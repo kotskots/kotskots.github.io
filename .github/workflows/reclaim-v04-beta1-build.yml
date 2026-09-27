@@ -46,6 +46,8 @@ jobs:
           gzip -dc /tmp/reclaim-v04-beta1.patch.gz > /tmp/reclaim-v04-beta1.patch
           cd /tmp/reclaim-v04/Reclaim
           patch -p1 < /tmp/reclaim-v04-beta1.patch
+          perl -0pi -e 's/    val productivity = remember \{ ProductivityRepository\(androidx\.compose\.ui\.platform\.LocalContext\.current\) \}\n/    val context = androidx.compose.ui.platform.LocalContext.current\n    val productivity = remember(context) { ProductivityRepository(context) }\n/' app/src/main/java/com/kostas/reclaim/MainActivity.kt
+          grep -q 'val productivity = remember(context)' app/src/main/java/com/kostas/reclaim/MainActivity.kt
           grep -q 'versionCode = 5' app/build.gradle.kts
           grep -q 'versionName = "0.4.0-beta1"' app/build.gradle.kts
           test -f app/src/main/java/com/kostas/reclaim/DistractionManager.kt
