@@ -1,0 +1,366 @@
+--- a/app/build.gradle.kts
++++ b/app/build.gradle.kts
+@@ -12,8 +12,8 @@
+         applicationId = "com.kostas.reclaim"
+         minSdk = 26
+         targetSdk = 35
+-        versionCode = 3
+-        versionName = "0.3.0"
++        versionCode = 4
++        versionName = "0.4.0-alpha1"
+     }
+ 
+     buildFeatures {
+--- a/app/src/main/AndroidManifest.xml
++++ b/app/src/main/AndroidManifest.xml
+@@ -67,6 +67,11 @@
+             android:foregroundServiceType="dataSync" />
+ 
+         <service
++            android:name=".CloudSyncService"
++            android:exported="false"
++            android:foregroundServiceType="dataSync" />
++
++        <service
+             android:name=".WorkBlockAccessibilityService"
+             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+             android:exported="false"
+--- a/app/src/main/java/com/kostas/reclaim/FocusPreferences.kt
++++ b/app/src/main/java/com/kostas/reclaim/FocusPreferences.kt
+@@ -1,6 +1,7 @@
+ package com.kostas.reclaim
+ 
+ import android.content.Context
++import java.util.UUID
+ 
+ object FocusPreferences {
+     private const val PREFS = "reclaim_focus"
+@@ -9,6 +10,9 @@
+     private const val INTENTION = "work_mode_intention"
+     private const val DURATION = "work_mode_duration"
+     private const val UPDATED_AT = "work_mode_updated_at"
++    private const val PROFILE = "work_mode_profile"
++    private const val STRICT_MODE = "work_mode_strict_mode"
++    private const val SESSION_ID = "work_mode_session_id"
+ 
+     fun blockedPackages(context: Context): Set<String> =
+         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+@@ -21,14 +25,24 @@
+             .edit().putStringSet(BLOCKED, packages).apply()
+     }
+ 
+-    fun start(context: Context, minutes: Int, intention: String = "") {
+-        val until = System.currentTimeMillis() + minutes * 60_000L
++    fun start(
++        context: Context,
++        minutes: Int,
++        intention: String = "",
++        profile: String = "Work",
++        strictMode: String = "NORMAL"
++    ) {
++        val now = System.currentTimeMillis()
++        val until = now + minutes * 60_000L
+         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+             .edit()
+             .putLong(UNTIL, until)
+             .putString(INTENTION, intention.trim())
+             .putInt(DURATION, minutes)
+-            .putLong(UPDATED_AT, System.currentTimeMillis())
++            .putLong(UPDATED_AT, now)
++            .putString(PROFILE, profile)
++            .putString(STRICT_MODE, strictMode)
++            .putString(SESSION_ID, UUID.randomUUID().toString())
+             .apply()
+     }
+ 
+@@ -37,10 +51,19 @@
+             .edit()
+             .putLong(UNTIL, 0L)
+             .putLong(UPDATED_AT, updatedAt)
++            .putString(SESSION_ID, "")
+             .apply()
+     }
+ 
+-    fun startUntil(context: Context, until: Long, intention: String = "", updatedAt: Long = System.currentTimeMillis()) {
++    fun startUntil(
++        context: Context,
++        until: Long,
++        intention: String = "",
++        updatedAt: Long = System.currentTimeMillis(),
++        profile: String = "Work",
++        strictMode: String = "NORMAL",
++        sessionId: String = ""
++    ) {
+         val minutes = ((until - System.currentTimeMillis()).coerceAtLeast(0L) / 60_000L).toInt().coerceAtLeast(1)
+         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+             .edit()
+@@ -48,6 +71,9 @@
+             .putString(INTENTION, intention.trim())
+             .putInt(DURATION, minutes)
+             .putLong(UPDATED_AT, updatedAt)
++            .putString(PROFILE, profile)
++            .putString(STRICT_MODE, strictMode)
++            .putString(SESSION_ID, sessionId)
+             .apply()
+     }
+ 
+@@ -63,6 +89,15 @@
+     fun updatedAt(context: Context): Long =
+         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getLong(UPDATED_AT, 0L)
+ 
++    fun profile(context: Context): String =
++        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(PROFILE, "Work") ?: "Work"
++
++    fun strictMode(context: Context): String =
++        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(STRICT_MODE, "NORMAL") ?: "NORMAL"
++
++    fun sessionId(context: Context): String =
++        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(SESSION_ID, "") ?: ""
++
+     fun isActive(context: Context): Boolean = until(context) > System.currentTimeMillis()
+ }
+ 
+--- a/app/src/main/java/com/kostas/reclaim/BootReceiver.kt
++++ b/app/src/main/java/com/kostas/reclaim/BootReceiver.kt
+@@ -16,5 +16,7 @@
+                 else now + 5_000L
+                 ReminderScheduler.schedule(context, reminder.copy(nextAt = at), at)
+             }
++        if (CloudSyncPreferences.isConfigured(context)) CloudSyncService.start(context)
++        if (WindowsSyncPreferences.isConfigured(context)) WindowsSyncService.start(context)
+     }
+ }
+--- a/app/src/main/java/com/kostas/reclaim/MainActivity.kt
++++ b/app/src/main/java/com/kostas/reclaim/MainActivity.kt
+@@ -777,6 +777,14 @@
+     var discovering by remember { mutableStateOf(false) }
+     var discoveredDevices by remember { mutableStateOf<List<WindowsDevice>>(emptyList()) }
+ 
++    var cloudServer by remember { mutableStateOf(CloudSyncPreferences.serverUrl(context)) }
++    var cloudDeviceName by remember { mutableStateOf(CloudSyncPreferences.deviceName(context)) }
++    var cloudMessage by remember { mutableStateOf(if (CloudSyncPreferences.isConfigured(context)) "Cloud sync configured" else "Not connected to Reclaim Cloud") }
++    var cloudPairCode by remember { mutableStateOf("") }
++    var cloudPairExpires by remember { mutableLongStateOf(0L) }
++    var cloudDevices by remember { mutableStateOf<List<CloudDevice>>(emptyList()) }
++    var cloudBusy by remember { mutableStateOf(false) }
++
+     val vpnPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+         if (result.resultCode == Activity.RESULT_OK) {
+             WebsitePreferences.setEnabled(context, true)
+@@ -789,6 +797,7 @@
+     }
+ 
+     LaunchedEffect(Unit) {
++        if (CloudSyncPreferences.isConfigured(context)) CloudSyncService.start(context)
+         if (WindowsSyncPreferences.isConfigured(context)) WindowsSyncService.start(context)
+         if (WebsitePreferences.enabled(context) && VpnService.prepare(context) == null) DnsVpnService.start(context)
+         while (true) {
+@@ -800,14 +809,24 @@
+         }
+     }
+ 
+-    fun pushToWindows() {
+-        if (!WindowsSyncPreferences.isConfigured(context)) return
++    fun pushEverywhere() {
+         scope.launch {
+-            val result = withContext(Dispatchers.IO) { WindowsSyncClient.pushLocalState(context) }
+-            syncMessage = result.fold(
+-                onSuccess = { "Synced with ${WindowsSyncPreferences.name(context).ifBlank { "Windows PC" }}" },
+-                onFailure = { "Windows offline — local rules stay active" }
+-            )
++            if (CloudSyncPreferences.isConfigured(context)) {
++                val result = withContext(Dispatchers.IO) { CloudSyncClient.pushLocalState(context) }
++                result.onSuccess { remote ->
++                    cloudDevices = remote.devices
++                    cloudMessage = "Cloud synced"
++                }.onFailure {
++                    cloudMessage = "Cloud offline — local rules stay active"
++                }
++            }
++            if (WindowsSyncPreferences.isConfigured(context)) {
++                val result = withContext(Dispatchers.IO) { WindowsSyncClient.pushLocalState(context) }
++                syncMessage = result.fold(
++                    onSuccess = { "Synced with ${WindowsSyncPreferences.name(context).ifBlank { "Windows PC" }}" },
++                    onFailure = { "Windows offline — local rules stay active" }
++                )
++            }
+         }
+     }
+ 
+@@ -821,7 +840,7 @@
+     ) {
+         item {
+             Text("Focus", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+-            Text("One work session across your phone and Windows PC.", color = MaterialTheme.colorScheme.onSurfaceVariant)
++            Text("One work session across Android, Reclaim Cloud and every paired PC.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+         }
+ 
+         item {
+@@ -831,11 +850,12 @@
+                     if (active) {
+                         if (FocusPreferences.intention(context).isNotBlank()) Text(FocusPreferences.intention(context), style = MaterialTheme.typography.titleLarge)
+                         Text("Ends ${formatClock(workUntil)}")
++                        if (CloudSyncPreferences.isConfigured(context)) Text(cloudMessage, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                         if (WindowsSyncPreferences.isConfigured(context)) Text(syncMessage, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                         Button(onClick = {
+                             FocusPreferences.stop(context)
+                             workUntil = 0L
+-                            pushToWindows()
++                            pushEverywhere()
+                         }, modifier = Modifier.fillMaxWidth()) { Text("End everywhere") }
+                     } else {
+                         OutlinedTextField(intention, { intention = it }, modifier = Modifier.fillMaxWidth(), label = { Text("What are you working on?") }, singleLine = true)
+@@ -848,8 +868,124 @@
+                             FocusPreferences.start(context, duration, intention)
+                             repo.logFocusSession(duration, intention)
+                             workUntil = FocusPreferences.until(context)
+-                            pushToWindows()
+-                        }, modifier = Modifier.fillMaxWidth()) { Text(if (WindowsSyncPreferences.isConfigured(context)) "Start on phone + PC" else "Start focus") }
++                            pushEverywhere()
++                        }, modifier = Modifier.fillMaxWidth()) { Text(if (CloudSyncPreferences.isConfigured(context)) "Start on all devices" else if (WindowsSyncPreferences.isConfigured(context)) "Start on phone + PC" else "Start focus") }
++                    }
++                }
++            }
++        }
++
++        item { SectionTitle("Reclaim Cloud — alpha") }
++        item {
++            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
++                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
++                    Text("Multi-device sync", fontWeight = FontWeight.Bold)
++                    Text("This is the v0.4 sync foundation for your phone + 3 or more PCs. A cloud server URL is required; until we deploy the permanent server you can also point it at the Reclaim Sync Server running on a PC/VPS.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
++                    Text(cloudMessage, color = if (CloudSyncPreferences.isConfigured(context)) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
++                    OutlinedTextField(
++                        value = cloudServer,
++                        onValueChange = { cloudServer = it },
++                        modifier = Modifier.fillMaxWidth(),
++                        label = { Text("Sync server URL") },
++                        placeholder = { Text("https://sync.example.com") },
++                        singleLine = true
++                    )
++                    OutlinedTextField(
++                        value = cloudDeviceName,
++                        onValueChange = { cloudDeviceName = it },
++                        modifier = Modifier.fillMaxWidth(),
++                        label = { Text("This phone") },
++                        singleLine = true
++                    )
++                    if (!CloudSyncPreferences.isConfigured(context)) {
++                        Button(
++                            enabled = !cloudBusy && cloudServer.isNotBlank(),
++                            onClick = {
++                                cloudBusy = true
++                                cloudMessage = "Creating Reclaim workspace…"
++                                scope.launch {
++                                    val result = withContext(Dispatchers.IO) { CloudSyncClient.createWorkspace(cloudServer, cloudDeviceName) }
++                                    result.onSuccess { created ->
++                                        CloudSyncPreferences.saveWorkspace(
++                                            context,
++                                            cloudServer,
++                                            created.workspaceId,
++                                            created.ownerToken,
++                                            created.deviceId,
++                                            created.deviceToken,
++                                            cloudDeviceName
++                                        )
++                                        CloudSyncService.start(context)
++                                        cloudMessage = "Workspace created — cloud sync active"
++                                        withContext(Dispatchers.IO) { CloudSyncClient.pushLocalState(context) }
++                                    }.onFailure {
++                                        cloudMessage = "Could not connect: ${it.message ?: "check the server URL"}"
++                                    }
++                                    cloudBusy = false
++                                }
++                            },
++                            modifier = Modifier.fillMaxWidth()
++                        ) { Text(if (cloudBusy) "Connecting…" else "Create / connect my Reclaim workspace") }
++                    } else {
++                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
++                            OutlinedButton(
++                                enabled = !cloudBusy,
++                                onClick = {
++                                    cloudBusy = true
++                                    scope.launch {
++                                        val result = withContext(Dispatchers.IO) { CloudSyncClient.fetchState(context) }
++                                        result.onSuccess { remote ->
++                                            cloudDevices = remote.devices
++                                            CloudSyncClient.applyIfNewer(context, remote)
++                                            cloudMessage = "Synced now — ${remote.devices.count { it.online }} device(s) online"
++                                        }.onFailure { cloudMessage = "Sync failed: ${it.message ?: "offline"}" }
++                                        cloudBusy = false
++                                    }
++                                }
++                            ) { Text("Sync now") }
++                            OutlinedButton(
++                                enabled = !cloudBusy && CloudSyncPreferences.isOwner(context),
++                                onClick = {
++                                    cloudBusy = true
++                                    scope.launch {
++                                        val result = withContext(Dispatchers.IO) { CloudSyncClient.generatePairCode(context) }
++                                        result.onSuccess {
++                                            cloudPairCode = it.code
++                                            cloudPairExpires = it.expiresAt
++                                            cloudMessage = "Use this code on a Windows PC"
++                                        }.onFailure { cloudMessage = "Could not create pairing code: ${it.message}" }
++                                        cloudBusy = false
++                                    }
++                                }
++                            ) { Text("Pair a PC") }
++                        }
++                        if (cloudPairCode.isNotBlank() && cloudPairExpires > System.currentTimeMillis()) {
++                            Text(cloudPairCode, style = MaterialTheme.typography.displaySmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
++                            Text("One-use code. Expires ${formatClock(cloudPairExpires)}.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
++                        }
++                        if (cloudDevices.isNotEmpty()) {
++                            Text("Devices", fontWeight = FontWeight.Bold)
++                            cloudDevices.forEach { device ->
++                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
++                                    Text(if (device.online) "●" else "○", color = if (device.online) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
++                                    Spacer(Modifier.width(8.dp))
++                                    Column(Modifier.weight(1f)) {
++                                        Text(device.name)
++                                        Text("${device.platform}${if (device.appVersion.isNotBlank()) " • ${device.appVersion}" else ""}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
++                                    }
++                                }
++                            }
++                        }
++                        OutlinedButton(
++                            onClick = {
++                                CloudSyncService.stop(context)
++                                CloudSyncPreferences.clear(context)
++                                cloudPairCode = ""
++                                cloudDevices = emptyList()
++                                cloudMessage = "Disconnected from Reclaim Cloud"
++                            },
++                            modifier = Modifier.fillMaxWidth()
++                        ) { Text("Disconnect cloud") }
+                     }
+                 }
+             }
+@@ -999,7 +1135,7 @@
+                             Checkbox(checked = checked, onCheckedChange = {
+                                 categories = if (checked) categories - category else categories + category
+                                 WebsitePreferences.setCategories(context, categories)
+-                                pushToWindows()
++                                pushEverywhere()
+                             })
+                             Text(category.label)
+                         }
+@@ -1021,7 +1157,7 @@
+                             WebsitePreferences.setCustomDomains(context, customDomains)
+                             customDomains = WebsitePreferences.customDomains(context)
+                             domainText = ""
+-                            pushToWindows()
++                            pushEverywhere()
+                         }) { Icon(Icons.Default.Add, "Add") }
+                     }
+                     customDomains.sorted().forEach { domain ->
+@@ -1030,7 +1166,7 @@
+                             TextButton(onClick = {
+                                 customDomains = customDomains - domain
+                                 WebsitePreferences.setCustomDomains(context, customDomains)
+-                                pushToWindows()
++                                pushEverywhere()
+                             }) { Text("Remove") }
+                         }
+                     }
