@@ -14,10 +14,10 @@ jobs:
       - name: Checkout build patches
         uses: actions/checkout@v4
 
-      - name: Checkout verified beta1 source
+      - name: Checkout verified Reclaim source assets
         uses: actions/checkout@v4
         with:
-          ref: reclaim-win-v03-beta1-build2
+          ref: reclaim-win-v03-beta1-build3
           path: reclaim-source
 
       - name: Set up .NET 8
@@ -25,63 +25,82 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Reconstruct and patch Windows beta3 source
+      - name: Reconstruct verified beta1 and apply beta3 patch
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          Write-Host '1/5 Extract source'
-          $zip = Join-Path $env:GITHUB_WORKSPACE 'reclaim-source\.reclaim-win-v03-beta1\source.zip'
-          if (-not (Test-Path $zip)) { throw 'Verified beta1 source ZIP missing' }
+          $src = Join-Path $env:GITHUB_WORKSPACE 'reclaim-source'
           $dst = Join-Path $env:RUNNER_TEMP 'reclaim-win-v032-beta3'
           Remove-Item -Recurse -Force $dst -ErrorAction SilentlyContinue
-          Expand-Archive -Path $zip -DestinationPath $dst -Force
 
-          $program = Join-Path $dst 'ReclaimWindows\Program.cs'
-          $proj = Join-Path $dst 'ReclaimWindows\ReclaimWindows.csproj'
-          if (-not (Test-Path $program)) { throw 'Program.cs missing' }
-          if (-not (Test-Path $proj)) { throw 'ReclaimWindows.csproj missing' }
+          Write-Host '1/6 Reconstruct alpha source from verified chunks'
+          $alphaParts = @('part00','part01a','part01b','part02')
+          $alpha64 = ($alphaParts | ForEach-Object { Get-Content (Join-Path $src ".reclaim-win-v03\$_") -Raw }) -join ''
+          $alphaZip = Join-Path $env:RUNNER_TEMP 'ReclaimWindows-v0.3-alpha1-source.zip'
+          [IO.File]::WriteAllBytes($alphaZip, [Convert]::FromBase64String($alpha64))
+          Expand-Archive -Path $alphaZip -DestinationPath $dst -Force
 
-          Write-Host '2/5 Normalize source text'
-          $utf8 = [System.Text.UTF8Encoding]::new($false)
-          foreach ($file in @($program, $proj)) {
-            $text = [IO.File]::ReadAllText($file).Replace("`r`n", "`n").Replace("`r", "`n")
-            [IO.File]::WriteAllText($file, $text, $utf8)
-          }
-
-          Write-Host '3/5 Decode verified patch'
-          $b64 = Get-Content '.reclaim-build-patches\windows-v032-beta3.patch.gz.b64' -Raw
-          $gz = Join-Path $env:RUNNER_TEMP 'windows-beta3.patch.gz'
-          [IO.File]::WriteAllBytes($gz, [Convert]::FromBase64String($b64))
-          $patch = Join-Path $env:RUNNER_TEMP 'windows-beta3.patch'
-          $input = [IO.File]::OpenRead($gz)
+          Write-Host '2/6 Reconstruct and apply verified beta1 patch'
+          $beta64 = Get-Content (Join-Path $src '.reclaim-win-v03-beta1-patch\patch.gz.b64') -Raw
+          $betaGz = Join-Path $env:RUNNER_TEMP 'windows-beta1.patch.gz'
+          [IO.File]::WriteAllBytes($betaGz, [Convert]::FromBase64String($beta64))
+          $betaPatch = Join-Path $env:RUNNER_TEMP 'windows-beta1.patch'
+          $input = [IO.File]::OpenRead($betaGz)
           $gzip = [IO.Compression.GzipStream]::new($input, [IO.Compression.CompressionMode]::Decompress)
-          $output = [IO.File]::Create($patch)
+          $output = [IO.File]::Create($betaPatch)
           $gzip.CopyTo($output)
           $output.Dispose(); $gzip.Dispose(); $input.Dispose()
-          $patchHash = (Get-FileHash $patch -Algorithm SHA256).Hash.ToLower()
-          Write-Host "Patch SHA: $patchHash"
-          if ($patchHash -ne '70af5f754412069c7552b79389e28c7dd3943c54eacf91cb257725c3b6639bdb') { throw "Patch SHA mismatch: $patchHash" }
 
-          Write-Host '4/5 Apply patch'
           Push-Location $dst
           git init | Out-Null
           git config user.name build
           git config user.email build@local
           git add .
-          git commit -m beta1-base | Out-Null
-          git apply --check $patch
-          if ($LASTEXITCODE -ne 0) { throw 'Windows beta3 patch check failed' }
-          git apply $patch
-          if ($LASTEXITCODE -ne 0) { throw 'Windows beta3 patch apply failed' }
+          git commit -m alpha-base | Out-Null
+          git apply --check $betaPatch
+          if ($LASTEXITCODE -ne 0) { throw 'Verified beta1 patch check failed' }
+          git apply $betaPatch
+          if ($LASTEXITCODE -ne 0) { throw 'Verified beta1 patch apply failed' }
           Pop-Location
 
-          Write-Host '5/5 Verify patched features'
+          Write-Host '3/6 Reconstruct fresh beta3 patch'
+          $freshParts = 0..4 | ForEach-Object { '.reclaim-build-patches\windows-beta3-fresh\part{0:D2}' -f $_ }
+          $fresh64 = ($freshParts | ForEach-Object { Get-Content $_ -Raw }) -join ''
+          $freshGz = Join-Path $env:RUNNER_TEMP 'windows-beta3-fresh.patch.gz'
+          [IO.File]::WriteAllBytes($freshGz, [Convert]::FromBase64String($fresh64))
+          $freshPatch = Join-Path $env:RUNNER_TEMP 'windows-beta3-fresh.patch'
+          $input = [IO.File]::OpenRead($freshGz)
+          $gzip = [IO.Compression.GzipStream]::new($input, [IO.Compression.CompressionMode]::Decompress)
+          $output = [IO.File]::Create($freshPatch)
+          $gzip.CopyTo($output)
+          $output.Dispose(); $gzip.Dispose(); $input.Dispose()
+          $patchHash = (Get-FileHash $freshPatch -Algorithm SHA256).Hash.ToLower()
+          Write-Host "Fresh patch SHA: $patchHash"
+          if ($patchHash -ne 'defb30447a5b855a8b16321c5e20ea6a57a7ceee18c224bd255c5d097f4780a8') { throw "Fresh patch SHA mismatch: $patchHash" }
+
+          Write-Host '4/6 Apply fresh beta3 patch'
+          Push-Location $dst
+          git add .
+          git commit -m beta1-base | Out-Null
+          git apply --check $freshPatch
+          if ($LASTEXITCODE -ne 0) { throw 'Windows beta3 fresh patch check failed' }
+          git apply $freshPatch
+          if ($LASTEXITCODE -ne 0) { throw 'Windows beta3 fresh patch apply failed' }
+          Pop-Location
+
+          Write-Host '5/6 Verify features'
+          $program = Join-Path $dst 'ReclaimWindows\Program.cs'
+          $proj = Join-Path $dst 'ReclaimWindows\ReclaimWindows.csproj'
+          if (-not (Test-Path $program)) { throw 'Program.cs missing' }
+          if (-not (Test-Path $proj)) { throw 'ReclaimWindows.csproj missing' }
           $updated = Get-Content $proj -Raw
           if ($updated -notmatch '<Version>0\.3\.2-beta3</Version>') { throw 'Wrong beta3 version after patch' }
           $programText = Get-Content $program -Raw
           foreach ($needle in @('StartupTaskName', 'SettingsForm', 'IsLockedActive()', 'LOCKED UNTIL SESSION ENDS')) {
             if (-not $programText.Contains($needle)) { throw "Missing beta3 feature: $needle" }
           }
+
+          Write-Host '6/6 Source ready'
 
       - name: Publish Windows x64 single-file app
         shell: pwsh
