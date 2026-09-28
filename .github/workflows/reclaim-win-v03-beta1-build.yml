@@ -11,31 +11,58 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 35
     steps:
-      - name: Checkout feature source branch
+      - name: Checkout verified source branch
         uses: actions/checkout@v4
         with:
-          ref: reclaim-win-v03-beta1-build2
+          ref: reclaim-win-v03-beta1-build3
 
       - name: Set up .NET 8
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '8.0.x'
 
-      - name: Extract and verify source
+      - name: Reconstruct alpha base and apply beta feature patch
         shell: pwsh
         run: |
-          $zip = Join-Path $env:GITHUB_WORKSPACE '.reclaim-win-v03-beta1\source.zip'
-          if (-not (Test-Path $zip)) { throw 'Feature source ZIP missing' }
+          $names = @('part00','part01a','part01b','part02')
+          $b64 = ($names | ForEach-Object { Get-Content (Join-Path '.reclaim-win-v03' $_) -Raw }) -join ''
+          $zip = Join-Path $env:RUNNER_TEMP 'ReclaimWindows-v0.3-alpha1-source.zip'
+          [IO.File]::WriteAllBytes($zip, [Convert]::FromBase64String($b64))
+
           $dst = Join-Path $env:RUNNER_TEMP 'reclaim-win-v03-beta1'
           Remove-Item -Recurse -Force $dst -ErrorAction SilentlyContinue
-          New-Item -ItemType Directory -Path $dst | Out-Null
-          tar -xf $zip -C $dst
-          if ($LASTEXITCODE -ne 0) { throw 'tar extraction failed' }
+          Expand-Archive -Path $zip -DestinationPath $dst -Force
           $proj = Join-Path $dst 'ReclaimWindows\ReclaimWindows.csproj'
-          if (-not (Test-Path $proj)) { throw 'ReclaimWindows.csproj missing' }
+          if (-not (Test-Path $proj)) { throw 'Alpha base project missing' }
+
+          $patchB64 = Get-Content '.reclaim-win-v03-beta1-patch\patch.gz.b64' -Raw
+          $patchGz = Join-Path $env:RUNNER_TEMP 'beta.patch.gz'
+          [IO.File]::WriteAllBytes($patchGz, [Convert]::FromBase64String($patchB64))
+          $patchHash = (Get-FileHash $patchGz -Algorithm SHA256).Hash.ToLower()
+          if ($patchHash -ne 'cac32906454b933892f7b4374ab74eb86c312c1e06501e35dd16314ce03e0268') { throw "Patch hash mismatch: $patchHash" }
+
+          $patchFile = Join-Path $env:RUNNER_TEMP 'beta.patch'
+          $input = [IO.File]::OpenRead($patchGz)
+          $gzip = [IO.Compression.GzipStream]::new($input, [IO.Compression.CompressionMode]::Decompress)
+          $output = [IO.File]::Create($patchFile)
+          $gzip.CopyTo($output)
+          $output.Dispose(); $gzip.Dispose(); $input.Dispose()
+
+          Push-Location $dst
+          git init | Out-Null
+          git config user.name build
+          git config user.email build@local
+          git add .
+          git commit -m alpha-base | Out-Null
+          git apply --check $patchFile
+          if ($LASTEXITCODE -ne 0) { throw 'Feature patch check failed' }
+          git apply $patchFile
+          if ($LASTEXITCODE -ne 0) { throw 'Feature patch apply failed' }
+          Pop-Location
+
           $text = Get-Content $proj -Raw
-          if ($text -notmatch '<Version>0\.3\.0-beta1</Version>') { throw 'Wrong Windows beta version' }
-          Write-Host "Source SHA256: $((Get-FileHash $zip -Algorithm SHA256).Hash.ToLower())"
+          if ($text -notmatch '<Version>0\.3\.0-beta1</Version>') { throw 'Beta version was not applied' }
+          Write-Host "Patch SHA256: $patchHash"
 
       - name: Publish Windows x64 single-file app
         shell: pwsh
