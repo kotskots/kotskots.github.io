@@ -1,0 +1,104 @@
+name: Temporary Reclaim v0.4 beta1 Feature Build
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/reclaim-v04-beta1-feature-build.yml'
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+    steps:
+      - name: Checkout feature build branch
+        uses: actions/checkout@v4
+        with:
+          ref: reclaim-v04-beta1-build2
+
+      - name: Reconstruct Android beta source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .reclaim-v03/android/part* > /tmp/reclaim-v03.b64
+          base64 --decode /tmp/reclaim-v03.b64 > /tmp/Reclaim-v0.3-source.zip
+          unzip -t /tmp/Reclaim-v0.3-source.zip >/dev/null
+          rm -rf /tmp/reclaim-beta
+          mkdir -p /tmp/reclaim-beta
+          unzip -q /tmp/Reclaim-v0.3-source.zip -d /tmp/reclaim-beta
+          cd /tmp/reclaim-beta/Reclaim
+          patch -p1 < "$GITHUB_WORKSPACE/.reclaim-v04/reclaim-v04.patch"
+          cp "$GITHUB_WORKSPACE/.reclaim-v04/CloudSync.kt" app/src/main/java/com/kostas/reclaim/CloudSync.kt
+          cp "$GITHUB_WORKSPACE/.reclaim-v04/CloudSyncService.kt" app/src/main/java/com/kostas/reclaim/CloudSyncService.kt
+          cat "$GITHUB_WORKSPACE"/.reclaim-v04-beta1/patch/part* > /tmp/beta.patch.gz.b64
+          base64 --decode /tmp/beta.patch.gz.b64 > /tmp/beta.patch.gz
+          echo '15925b1f309666b3faec00f1dbd1d0e5db234fbd7d45bc38197673c0f1d1d14d  /tmp/beta.patch.gz' | sha256sum -c -
+          gzip -dc /tmp/beta.patch.gz > /tmp/beta.patch
+          patch -p4 < /tmp/beta.patch
+          grep -q 'versionCode = 5' app/build.gradle.kts
+          grep -q 'versionName = "0.4.0-beta1"' app/build.gradle.kts
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Android SDK
+        shell: bash
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-version: '8.9'
+
+      - name: Build Android release
+        working-directory: /tmp/reclaim-beta/Reclaim
+        run: gradle --no-daemon :app:assembleRelease --stacktrace
+
+      - name: Download permanent Reclaim signing key
+        uses: actions/download-artifact@v5
+        with:
+          name: Reclaim-signing-backup-v0.2
+          path: /tmp/reclaim-signing-artifact
+          github-token: ${{ github.token }}
+          repository: kotskots/kotskots.github.io
+          run-id: 36263273293
+
+      - name: Sign and verify APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/reclaim-signing
+          unzip -q /tmp/reclaim-signing-artifact/Reclaim-signing-backup-v0.2.zip -d /tmp/reclaim-signing
+          PASS=$(cat /tmp/reclaim-signing/reclaim-keystore-password.txt)
+          UNSIGNED=/tmp/reclaim-beta/Reclaim/app/build/outputs/apk/release/app-release-unsigned.apk
+          ALIGNED=/tmp/Reclaim-v0.4-beta1-aligned.apk
+          SIGNED=/tmp/Reclaim-v0.4-beta1.apk
+          ZIPALIGN="$ANDROID_HOME/build-tools/35.0.0/zipalign"
+          APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
+          "$ZIPALIGN" -p -f 4 "$UNSIGNED" "$ALIGNED"
+          "$APKSIGNER" sign --ks /tmp/reclaim-signing/reclaim-release.jks --ks-key-alias reclaim --ks-pass "pass:$PASS" --key-pass "pass:$PASS" --v2-signing-enabled true --v3-signing-enabled true --out "$SIGNED" "$ALIGNED"
+          "$APKSIGNER" verify --verbose --print-certs "$SIGNED" | tee /tmp/signature.txt
+          "$ZIPALIGN" -c -v 4 "$SIGNED" >/dev/null
+          "$AAPT" dump badging "$SIGNED" | head -n 3 | tee /tmp/package.txt
+          grep -q "package: name='com.kostas.reclaim' versionCode='5' versionName='0.4.0-beta1'" /tmp/package.txt
+          grep -q 'Verified using v2 scheme (APK Signature Scheme v2): true' /tmp/signature.txt
+          grep -q 'Verified using v3 scheme (APK Signature Scheme v3): true' /tmp/signature.txt
+          grep -q 'd5933ab2b7662c1606fb6b63e422eafe417e690fc5ca057de52d72cce571cd83' /tmp/signature.txt
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Reclaim-v0.4-beta1-Android
+          path: /tmp/Reclaim-v0.4-beta1.apk
+          if-no-files-found: error
