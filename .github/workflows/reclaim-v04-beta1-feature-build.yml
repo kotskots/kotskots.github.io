@@ -46,7 +46,7 @@ jobs:
           base64 --decode /tmp/beta.patch.gz.b64 > /tmp/beta.patch.gz
           echo '15925b1f309666b3faec00f1dbd1d0e5db234fbd7d45bc38197673c0f1d1d14d  /tmp/beta.patch.gz' | sha256sum -c -
           gzip -dc /tmp/beta.patch.gz > /tmp/beta.patch
-          patch -p4 < /tmp/beta.patch
+          patch -p5 < /tmp/beta.patch
           grep -q 'versionCode = 5' app/build.gradle.kts
           grep -q 'versionName = "0.4.0-beta1"' app/build.gradle.kts
 
