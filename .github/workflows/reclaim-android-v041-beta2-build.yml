@@ -53,6 +53,9 @@ jobs:
           from pathlib import Path
           root = Path('/tmp/reclaim-v04-beta2/reclaim_feature_android_beta')
           overlay = Path('.reclaim-v04-beta2-overrides/WorkBlockAccessibilityService.kt').read_text()
+          overlay = overlay.replace('if (!active && packageName in repo.frictionPackages() && packageName != frictionBypassPackage)', 'if (packageName in repo.frictionPackages() && packageName != frictionBypassPackage)')
+          if 'if (!active && packageName in repo.frictionPackages()' in overlay:
+              raise SystemExit('Could not enable pause screen during allowed focus apps')
           (root/'app/src/main/java/com/kostas/reclaim/WorkBlockAccessibilityService.kt').write_text(overlay)
 
           gradle_path = root/'app/build.gradle.kts'
