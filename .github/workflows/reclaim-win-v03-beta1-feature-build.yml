@@ -15,24 +15,43 @@ jobs:
       - name: Checkout feature build branch
         uses: actions/checkout@v4
         with:
-          ref: reclaim-win-v03-beta1-build2
+          ref: reclaim-win-v03-beta1-build3
 
       - name: Set up .NET 8
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '8.0.x'
 
-      - name: Verify and extract source
+      - name: Reconstruct verified alpha source and apply beta patch
         shell: pwsh
         run: |
-          $zip = '.reclaim-win-v03-beta1\source.zip'
-          if (-not (Test-Path $zip)) { throw 'Source ZIP missing' }
+          $names = @('part00','part01a','part01b','part02')
+          $b64 = ($names | ForEach-Object { Get-Content (Join-Path '.reclaim-win-v03' $_) -Raw }) -join ''
+          $zip = "$env:RUNNER_TEMP\ReclaimWindows-v0.3-alpha1-source.zip"
+          [IO.File]::WriteAllBytes($zip, [Convert]::FromBase64String($b64))
           $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
-          if ($hash -ne 'd524a658ecc18f042c24a9169708bda5fc4808273f6b80f8148245f334d918e5') { throw "Source hash mismatch: $hash" }
+          if ($hash -ne 'a79853c679f016046968ae628d04c7f46ff8bd7bcca607efaf8c02a44af020b1') { throw "Alpha source hash mismatch: $hash" }
           $dst = "$env:RUNNER_TEMP\reclaim-win-beta"
           Remove-Item -Recurse -Force $dst -ErrorAction SilentlyContinue
           Expand-Archive -Path $zip -DestinationPath $dst -Force
+          $patchB64 = Get-Content '.reclaim-win-v03-beta1\patch\part00' -Raw
+          $patchGz = "$env:RUNNER_TEMP\win-beta.patch.gz"
+          [IO.File]::WriteAllBytes($patchGz, [Convert]::FromBase64String($patchB64))
+          $patchHash = (Get-FileHash $patchGz -Algorithm SHA256).Hash.ToLower()
+          if ($patchHash -ne '8aa1db7878508dc90a67c1c0cde065f04e548158d494547e543ef426fce331c8') { throw "Patch hash mismatch: $patchHash" }
+          $patch = "$env:RUNNER_TEMP\win-beta.patch"
+          $in = [IO.File]::OpenRead($patchGz)
+          $gz = New-Object IO.Compression.GzipStream($in, [IO.Compression.CompressionMode]::Decompress)
+          $out = [IO.File]::Create($patch)
+          $gz.CopyTo($out); $out.Close(); $gz.Close(); $in.Close()
+          Push-Location $dst
+          & 'C:\Program Files\Git\usr\bin\patch.exe' -p1 -i $patch
+          if ($LASTEXITCODE -ne 0) { throw "Feature patch failed with $LASTEXITCODE" }
+          Pop-Location
           if (-not (Test-Path "$dst\ReclaimWindows\ReclaimWindows.csproj")) { throw 'Project missing' }
+          Select-String -Path "$dst\ReclaimWindows\Program.cs" -Pattern 'WhitelistMode' -Quiet | Out-Null
+          Select-String -Path "$dst\ReclaimWindows\Program.cs" -Pattern 'TodayStats' -Quiet | Out-Null
+          Select-String -Path "$dst\ReclaimWindows\ReclaimWindows.csproj" -Pattern '0.3.0-beta1' -Quiet | Out-Null
 
       - name: Build Windows x64 single-file app
         shell: pwsh
