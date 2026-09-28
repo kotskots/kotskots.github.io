@@ -1,0 +1,99 @@
+name: Reclaim Windows v0.3.2 beta3 Build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/reclaim-win-v032-beta3-build.yml'
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout build patches
+        uses: actions/checkout@v4
+
+      - name: Checkout verified beta1 source
+        uses: actions/checkout@v4
+        with:
+          ref: reclaim-win-v03-beta1-build2
+          path: reclaim-source
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Reconstruct and patch Windows beta3 source
+        shell: pwsh
+        run: |
+          $zip = Join-Path $env:GITHUB_WORKSPACE 'reclaim-source\.reclaim-win-v03-beta1\source.zip'
+          if (-not (Test-Path $zip)) { throw 'Verified beta1 source ZIP missing' }
+          $dst = Join-Path $env:RUNNER_TEMP 'reclaim-win-v032-beta3'
+          Remove-Item -Recurse -Force $dst -ErrorAction SilentlyContinue
+          Expand-Archive -Path $zip -DestinationPath $dst -Force
+
+          $program = Join-Path $dst 'ReclaimWindows\Program.cs'
+          $proj = Join-Path $dst 'ReclaimWindows\ReclaimWindows.csproj'
+          if (-not (Test-Path $program)) { throw 'Program.cs missing' }
+          if (-not (Test-Path $proj)) { throw 'ReclaimWindows.csproj missing' }
+
+          # Normalize the two patched text files so the verified unified patch applies identically.
+          $utf8 = New-Object System.Text.UTF8Encoding($false)
+          foreach ($file in @($program, $proj)) {
+            $text = [IO.File]::ReadAllText($file).Replace("`r`n", "`n").Replace("`r", "`n")
+            [IO.File]::WriteAllText($file, $text, $utf8)
+          }
+
+          $b64 = Get-Content '.reclaim-build-patches\windows-v032-beta3.patch.gz.b64' -Raw
+          $gz = Join-Path $env:RUNNER_TEMP 'windows-beta3.patch.gz'
+          [IO.File]::WriteAllBytes($gz, [Convert]::FromBase64String($b64))
+          $patch = Join-Path $env:RUNNER_TEMP 'windows-beta3.patch'
+          $input = [IO.File]::OpenRead($gz)
+          $gzip = [IO.Compression.GzipStream]::new($input, [IO.Compression.CompressionMode]::Decompress)
+          $output = [IO.File]::Create($patch)
+          $gzip.CopyTo($output)
+          $output.Dispose(); $gzip.Dispose(); $input.Dispose()
+          $patchHash = (Get-FileHash $patch -Algorithm SHA256).Hash.ToLower()
+          if ($patchHash -ne '70af5f754412069c7552b79389e28c7dd3943c54eacf91cb257725c3b6639bdb') { throw "Patch SHA mismatch: $patchHash" }
+
+          Push-Location $dst
+          git init | Out-Null
+          git config user.name build
+          git config user.email build@local
+          git add .
+          git commit -m beta1-base | Out-Null
+          git apply --check $patch
+          if ($LASTEXITCODE -ne 0) { throw 'Windows beta3 patch check failed' }
+          git apply $patch
+          if ($LASTEXITCODE -ne 0) { throw 'Windows beta3 patch apply failed' }
+          Pop-Location
+
+          $updated = Get-Content $proj -Raw
+          if ($updated -notmatch '<Version>0\.3\.2-beta3</Version>') { throw 'Wrong beta3 version after patch' }
+          $programText = Get-Content $program -Raw
+          foreach ($needle in @('StartupTaskName', 'SettingsForm', 'IsLockedActive()', 'LOCKED UNTIL SESSION ENDS')) {
+            if (-not $programText.Contains($needle)) { throw "Missing beta3 feature: $needle" }
+          }
+
+      - name: Publish Windows x64 single-file app
+        shell: pwsh
+        run: |
+          $root = Join-Path $env:RUNNER_TEMP 'reclaim-win-v032-beta3\ReclaimWindows'
+          $proj = Join-Path $root 'ReclaimWindows.csproj'
+          dotnet publish $proj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:DebugType=None -p:DebugSymbols=false
+          if ($LASTEXITCODE -ne 0) { throw 'dotnet publish failed' }
+          $exe = Join-Path $root 'bin\Release\net8.0-windows\win-x64\publish\ReclaimWindows.exe'
+          if (-not (Test-Path $exe)) { throw 'ReclaimWindows.exe not produced' }
+          $out = Join-Path $env:RUNNER_TEMP 'ReclaimWindows-v0.3.2-beta3.exe'
+          Copy-Item $exe $out
+          Get-FileHash $out -Algorithm SHA256 | Format-List
+          Get-Item $out | Format-List Name,Length,VersionInfo
+
+      - name: Upload Windows beta3
+        uses: actions/upload-artifact@v4
+        with:
+          name: ReclaimWindows-v0.3.2-beta3
+          path: ${{ runner.temp }}\ReclaimWindows-v0.3.2-beta3.exe
+          if-no-files-found: error
