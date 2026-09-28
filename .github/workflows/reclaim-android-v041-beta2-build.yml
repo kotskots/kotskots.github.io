@@ -64,6 +64,14 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'beta1 patch failed' }
           Copy-Item (Join-Path $env:GITHUB_WORKSPACE '.reclaim-v04-beta2-overrides/WorkBlockAccessibilityService.kt') 'app/src/main/java/com/kostas/reclaim/WorkBlockAccessibilityService.kt' -Force
 
+          $servicePath = 'app/src/main/java/com/kostas/reclaim/WorkBlockAccessibilityService.kt'
+          $service = Get-Content $servicePath -Raw
+          $oldOwn = '        if (packageName == applicationContext.packageName) return'
+          $newOwn = "        if (packageName == applicationContext.packageName) {`n            frictionBypassPackage = null`n            removeFrictionOverlay()`n            return`n        }"
+          if (-not $service.Contains($oldOwn)) { throw 'Could not patch Reclaim re-entry reset' }
+          $service = $service.Replace($oldOwn, $newOwn)
+          Set-Content $servicePath $service -NoNewline
+
           $gradle = Get-Content 'app/build.gradle.kts' -Raw
           $gradle = $gradle -replace 'versionCode\s*=\s*5', 'versionCode = 6'
           $gradle = $gradle -replace 'versionName\s*=\s*"0\.4\.0-beta1"', 'versionName = "0.4.1-beta2"'
