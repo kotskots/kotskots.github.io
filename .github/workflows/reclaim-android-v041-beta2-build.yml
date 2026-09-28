@@ -53,31 +53,12 @@ jobs:
           from pathlib import Path
           root = Path('/tmp/reclaim-v04-beta3/reclaim_feature_android_beta')
           overlay = Path('.reclaim-v04-beta2-overrides/WorkBlockAccessibilityService.kt').read_text()
-
-          old_own = '''        if (packageName == applicationContext.packageName) {
-            frictionBypassPackage = null
-            removeFrictionOverlay()
-            return
-        }'''
-          new_own = '''        if (packageName == applicationContext.packageName) {
-            // Accessibility overlays themselves emit events as com.kostas.reclaim.
-            // Ignore those events; only reset state when the real Reclaim activity opens.
-            val ownClass = event.className?.toString().orEmpty()
-            if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
-                ownClass == MainActivity::class.java.name) {
-                frictionBypassPackage = null
-                removeFrictionOverlay()
-            }
-            return
-        }'''
+          old_own = "        if (packageName == applicationContext.packageName) {\n            frictionBypassPackage = null\n            removeFrictionOverlay()\n            return\n        }"
+          new_own = "        if (packageName == applicationContext.packageName) {\n            // The accessibility overlay itself emits Reclaim package events.\n            // Ignore those and reset only when the actual MainActivity opens.\n            val ownClass = event.className?.toString().orEmpty()\n            if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&\n                ownClass == MainActivity::class.java.name) {\n                frictionBypassPackage = null\n                removeFrictionOverlay()\n            }\n            return\n        }"
           if old_own not in overlay:
               raise SystemExit('Expected buggy own-package block not found')
           overlay = overlay.replace(old_own, new_own)
-
-          overlay = overlay.replace(
-              'if (!active && packageName in repo.frictionPackages() && packageName != frictionBypassPackage)',
-              'if (packageName in repo.frictionPackages() && packageName != frictionBypassPackage)'
-          )
+          overlay = overlay.replace('if (!active && packageName in repo.frictionPackages() && packageName != frictionBypassPackage)', 'if (packageName in repo.frictionPackages() && packageName != frictionBypassPackage)')
           if 'if (!active && packageName in repo.frictionPackages()' in overlay:
               raise SystemExit('Could not enable pause screen during allowed focus apps')
           (root/'app/src/main/java/com/kostas/reclaim/WorkBlockAccessibilityService.kt').write_text(overlay)
