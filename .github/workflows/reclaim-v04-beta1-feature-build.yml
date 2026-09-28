@@ -20,7 +20,7 @@ jobs:
         with:
           ref: reclaim-v04-beta1-build2
 
-      - name: Reconstruct and verify feature source
+      - name: Reconstruct, verify and patch feature source
         shell: bash
         run: |
           set -euo pipefail
@@ -31,9 +31,11 @@ jobs:
           rm -rf /tmp/reclaim-v04-beta1
           mkdir -p /tmp/reclaim-v04-beta1
           unzip -q /tmp/Reclaim-v0.4-beta1-feature-source.zip -d /tmp/reclaim-v04-beta1
-          test -f /tmp/reclaim-v04-beta1/reclaim_feature_android_beta/app/build.gradle.kts
-          grep -q 'versionCode = 5' /tmp/reclaim-v04-beta1/reclaim_feature_android_beta/app/build.gradle.kts
-          grep -q 'versionName = "0.4.0-beta1"' /tmp/reclaim-v04-beta1/reclaim_feature_android_beta/app/build.gradle.kts
+          cd /tmp/reclaim-v04-beta1/reclaim_feature_android_beta
+          patch -p1 < "$GITHUB_WORKSPACE/.reclaim-v04-beta1-feature/compile-fixes.patch"
+          test -f app/build.gradle.kts
+          grep -q 'versionCode = 5' app/build.gradle.kts
+          grep -q 'versionName = "0.4.0-beta1"' app/build.gradle.kts
 
       - name: Set up Java 17
         uses: actions/setup-java@v5
