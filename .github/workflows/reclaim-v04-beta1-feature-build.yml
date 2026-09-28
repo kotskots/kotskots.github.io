@@ -40,11 +40,11 @@ jobs:
           gzip -dc /tmp/beta.patch.gz > /tmp/beta.patch
           set +e
           patch --batch -p5 < /tmp/beta.patch
-          rc=$?
           set -e
           bad_rejects=$(find . -name '*.rej' ! -path './README.md.rej' -print)
           if [ -n "$bad_rejects" ]; then echo "$bad_rejects"; exit 1; fi
           rm -f README.md.rej
+          patch -p1 < "$GITHUB_WORKSPACE/.reclaim-v04-beta1/compile-fix.patch"
           grep -q 'versionCode = 5' app/build.gradle.kts
           grep -q 'versionName = "0.4.0-beta1"' app/build.gradle.kts
           grep -q 'whitelistMode' app/src/main/java/com/kostas/reclaim/FocusPreferences.kt
