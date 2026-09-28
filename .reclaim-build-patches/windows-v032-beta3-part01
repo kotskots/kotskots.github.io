@@ -1,0 +1,228 @@
+psi.ArgumentList.Add("/F");
++            using var process = Process.Start(psi);
++            process?.WaitForExit(3000);
+         }
+         catch { }
+     }
+@@ -837,6 +987,15 @@
+ 
+     private void ApplyRemoteStateLocked(CloudStatePayload remote)
+     {
++        var lockedHere = Config.State.Active &&
++                         Config.State.Until > NowMs() &&
++                         Config.State.StrictMode.Equals("LOCKED", StringComparison.OrdinalIgnoreCase);
++        if (lockedHere && (!remote.Active || remote.Until < Config.State.Until))
++        {
++            _cloudDevices = remote.Devices ?? new List<CloudDevice>();
++            return;
++        }
++
+         Config.State.Active = remote.Active && remote.Until > NowMs();
+         Config.State.Until = Config.State.Active ? remote.Until : 0;
+         Config.State.Intention = remote.Intention ?? "";
+@@ -961,6 +1120,82 @@
+     }
+ }
+ 
++public sealed class SettingsForm : Form
++{
++    private readonly ReclaimEngine _engine;
++    private readonly CheckBox _startWithWindows = new();
++    private readonly CheckBox _startMinimized = new();
++    private readonly CheckBox _minimizeToTray = new();
++    private readonly CheckBox _protectLocked = new();
++    private readonly TextBox _deviceName = new();
++
++    public SettingsForm(ReclaimEngine engine)
++    {
++        _engine = engine;
++        Text = "Reclaim Settings";
++        Width = 520;
++        Height = 420;
++        StartPosition = FormStartPosition.CenterParent;
++        BackColor = Color.FromArgb(15, 18, 22);
++        ForeColor = Color.WhiteSmoke;
++        Font = new Font("Segoe UI", 10f);
++
++        var root = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(20), AutoSize = true, ColumnCount = 1 };
++        Controls.Add(root);
++
++        root.Controls.Add(new Label { Text = "SETTINGS", AutoSize = true, Font = new Font("Segoe UI", 20, FontStyle.Bold), ForeColor = Color.WhiteSmoke });
++        root.Controls.Add(new Label { Text = "Startup & enforcement", AutoSize = true, Font = new Font("Segoe UI", 12, FontStyle.Bold), ForeColor = Color.WhiteSmoke, Margin = new Padding(0, 14, 0, 4) });
++
++        _startWithWindows.Text = "Start Reclaim automatically when I sign in to Windows";
++        _startWithWindows.AutoSize = true;
++        _startWithWindows.Checked = engine.Config.StartWithWindows;
++        root.Controls.Add(_startWithWindows);
++
++        _startMinimized.Text = "When Windows starts it, run quietly in the system tray";
++        _startMinimized.AutoSize = true;
++        _startMinimized.Checked = engine.Config.StartMinimized;
++        root.Controls.Add(_startMinimized);
++
++        _minimizeToTray.Text = "Clicking X hides Reclaim to the tray instead of exiting";
++        _minimizeToTray.AutoSize = true;
++        _minimizeToTray.Checked = engine.Config.MinimizeToTray;
++        root.Controls.Add(_minimizeToTray);
++
++        _protectLocked.Text = "During Locked Mode, prevent Exit and prevent changing blocking settings";
++        _protectLocked.AutoSize = true;
++        _protectLocked.Checked = engine.Config.ProtectSettingsWhenLocked;
++        root.Controls.Add(_protectLocked);
++
++        root.Controls.Add(new Label { Text = "This PC name", AutoSize = true, ForeColor = Color.Silver, Margin = new Padding(0, 16, 0, 4) });
++        _deviceName.Text = engine.Config.DeviceName;
++        _deviceName.Dock = DockStyle.Top;
++        root.Controls.Add(_deviceName);
++
++        root.Controls.Add(new Label
++        {
++            Text = "Locked Mode cannot be ended through Reclaim before its timer expires. Windows itself can still terminate any normal desktop app with administrator/system tools.",
++            AutoSize = true,
++            MaximumSize = new Size(450, 0),
++            ForeColor = Color.Silver,
++            Margin = new Padding(0, 14, 0, 10)
++        });
++
++        var buttons = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Top };
++        var save = new Button { Text = "SAVE SETTINGS", AutoSize = true, Padding = new Padding(12, 5, 12, 5) };
++        save.Click += (_, _) =>
++        {
++            _engine.UpdateAppSettings(_startWithWindows.Checked, _startMinimized.Checked, _minimizeToTray.Checked, _protectLocked.Checked, _deviceName.Text);
++            DialogResult = DialogResult.OK;
++            Close();
++        };
++        var cancel = new Button { Text = "CANCEL", AutoSize = true, Padding = new Padding(12, 5, 12, 5) };
++        cancel.Click += (_, _) => Close();
++        buttons.Controls.Add(save);
++        buttons.Controls.Add(cancel);
++        root.Controls.Add(buttons);
++    }
++}
++
+ public sealed class MainForm : Form
+ {
+     private readonly ReclaimEngine _engine;
+@@ -977,6 +1212,7 @@
+     private readonly CheckBox _startWithWindows = new();
+     private readonly TextBox _intention = new();
+     private readonly NumericUpDown _minutes = new();
++    private readonly ComboBox _strictModeSelect = new();
+     private readonly Button _startStop = new();
+     private readonly TextBox _processes = new();
+     private readonly TextBox _domains = new();
+@@ -988,11 +1224,16 @@
+     private readonly Dictionary<string, CheckBox> _categoryChecks = new(StringComparer.OrdinalIgnoreCase);
+     private readonly NotifyIcon _tray = new();
+     private readonly System.Windows.Forms.Timer _uiTimer = new();
++    private readonly Button _settingsButton = new();
++    private ToolStripItem? _trayEndItem;
++    private ToolStripItem? _trayExitItem;
+     private bool _reallyExit;
++    private readonly bool _startedByWindows;
+ 
+-    public MainForm(ReclaimEngine engine)
++    public MainForm(ReclaimEngine engine, bool startedByWindows = false)
+     {
+         _engine = engine;
++        _startedByWindows = startedByWindows;
+         Text = "Reclaim — Windows";
+         Width = 720;
+         Height = 1040;
+@@ -1006,7 +1247,14 @@
+         root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+         Controls.Add(root);
+ 
+-        root.Controls.Add(LabelOf("RECLAIM WINDOWS", 22, FontStyle.Bold));
++        var titleRow = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, WrapContents = false };
++        titleRow.Controls.Add(LabelOf("RECLAIM WINDOWS", 22, FontStyle.Bold));
++        _settingsButton.Text = "SETTINGS";
++        _settingsButton.AutoSize = true;
++        _settingsButton.Margin = new Padding(18, 2, 0, 0);
++        _settingsButton.Click += (_, _) => OpenSettings();
++        titleRow.Controls.Add(_settingsButton);
++        root.Controls.Add(titleRow);
+         root.Controls.Add(LabelOf("Reclaim Cloud", 15, FontStyle.Bold));
+         root.Controls.Add(LabelOf("Pair this PC to the workspace created on Android. Repeat with a fresh code on PC2 and PC3.", 9, FontStyle.Regular, Color.Silver));
+         _deviceName.PlaceholderText = "This PC name"; _deviceName.Dock = DockStyle.Top; root.Controls.Add(_deviceName);
+@@ -1018,7 +1266,17 @@
+         root.Controls.Add(cloudRow);
+         _cloudStatus.AutoSize = true; _cloudStatus.ForeColor = Color.Silver; root.Controls.Add(_cloudStatus);
+         _cloudDevices.AutoSize = true; _cloudDevices.MaximumSize = new Size(640, 0); _cloudDevices.ForeColor = Color.Silver; root.Controls.Add(_cloudDevices);
+-        _startWithWindows.Text = "Start Reclaim with Windows"; _startWithWindows.AutoSize = true; _startWithWindows.CheckedChanged += (_, _) => ReclaimEngine.SetStartWithWindows(_startWithWindows.Checked); root.Controls.Add(_startWithWindows);
++        _startWithWindows.Text = "Start Reclaim with Windows"; _startWithWindows.AutoSize = true;
++        _startWithWindows.CheckedChanged += (_, _) =>
++        {
++            if (_engine.IsLockedActive() && _engine.Config.ProtectSettingsWhenLocked)
++            {
++                _startWithWindows.Checked = _engine.Config.StartWithWindows;
++                return;
++            }
++            _engine.UpdateAppSettings(_startWithWindows.Checked, _engine.Config.StartMinimized, _engine.Config.MinimizeToTray, _engine.Config.ProtectSettingsWhenLocked, _deviceName.Text);
++        };
++        root.Controls.Add(_startWithWindows);
+ 
+         root.Controls.Add(LabelOf("Same-Wi-Fi fallback", 12, FontStyle.Bold));
+         root.Controls.Add(LabelOf($"This PC: {engine.Config.DeviceName}   •   IP: {ReclaimEngine.LocalIp()}   •   Port: {ReclaimEngine.ApiPort}   •   LAN code: {engine.Config.PairingCode}", 9, FontStyle.Regular, Color.Silver));
+@@ -1031,6 +1289,11 @@
+         var sessionRow = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, WrapContents = false, Margin = new Padding(0, 8, 0, 15) };
+         _minutes.Minimum = 5; _minutes.Maximum = 480; _minutes.Value = 90; _minutes.Width = 90;
+         sessionRow.Controls.Add(_minutes); sessionRow.Controls.Add(LabelOf("minutes", 10));
++        _strictModeSelect.DropDownStyle = ComboBoxStyle.DropDownList;
++        _strictModeSelect.Items.AddRange(new object[] { "NORMAL", "STRICT", "LOCKED" });
++        _strictModeSelect.SelectedItem = "NORMAL";
++        _strictModeSelect.Width = 110;
++        sessionRow.Controls.Add(_strictModeSelect);
+         _startStop.Text = "START WORK SESSION"; _startStop.AutoSize = true; _startStop.Padding = new Padding(12, 5, 12, 5); _startStop.Click += (_, _) => ToggleSession();
+         sessionRow.Controls.Add(_startStop); root.Controls.Add(sessionRow);
+         root.Controls.Add(LabelOf("Strict Mode follows the profile sent by Android. STRICT requires confirmation to end on Windows; LOCKED cannot be ended here before expiry.", 9, FontStyle.Regular, Color.Silver));
+@@ -1089,14 +1352,41 @@
+         _tray.DoubleClick += (_, _) => RestoreWindow();
+         var trayMenu = new ContextMenuStrip();
+         trayMenu.Items.Add("Open Reclaim", null, (_, _) => RestoreWindow());
+-        trayMenu.Items.Add("End Work Session", null, (_, _) => _engine.StopSession());
+-        trayMenu.Items.Add("Exit Reclaim", null, (_, _) => { _engine.StopSession(); _reallyExit = true; _tray.Visible = false; Close(); });
++        trayMenu.Items.Add("Settings", null, (_, _) => OpenSettings());
++        _trayEndItem = trayMenu.Items.Add("End Work Session", null, (_, _) => ToggleSession());
++        _trayExitItem = trayMenu.Items.Add("Exit Reclaim", null, (_, _) => TryExitFromTray());
+         _tray.ContextMenuStrip = trayMenu;
+ 
+-        FormClosing += (_, e) => { if (!_reallyExit) { e.Cancel = true; Hide(); _tray.ShowBalloonTip(1200, "Reclaim is still running", "App and website blocking continue in the background.", ToolTipIcon.Info); } };
++        FormClosing += (_, e) =>
++        {
++            if (_reallyExit || e.CloseReason == CloseReason.WindowsShutDown) return;
++            if (_engine.IsLockedActive())
++            {
++                e.Cancel = true;
++                Hide();
++                _tray.ShowBalloonTip(1600, "Reclaim Locked Mode", "Reclaim stays active until the locked session ends.", ToolTipIcon.Warning);
++                return;
++            }
++            if (_engine.Config.MinimizeToTray)
++            {
++                e.Cancel = true;
++                Hide();
++                _tray.ShowBalloonTip(1200, "Reclaim is still running", "App and website blocking continue in the background.", ToolTipIcon.Info);
++                return;
++            }
++            _reallyExit = true;
++            _tray.Visible = false;
++        };
+         _engine.StateChanged += RefreshFromEngineSafe;
+         _uiTimer.Interval = 1000; _uiTimer.Tick += (_, _) => RefreshStatusOnly(); _uiTimer.Start();
+         LoadFromEngine();
++        Shown += (_, _) =>
++        {
++            if (_startedByWindows && _engine.Config.StartMinimized)
++            {
++                BeginInvoke((Action)(() => Hide()));
++            }
++        };
+     }
+ 
+     private static Label LabelOf(string text, float size = 10, FontStyle style = FontStyle.Regular, Color? color = null) => new()
+@@ -1140,7 +1430,12 @@
+             }
+             _engine.StopSession();
+         }
+-        else { SaveRules(); _engine.StartSession((int)_minutes.Value, _int
