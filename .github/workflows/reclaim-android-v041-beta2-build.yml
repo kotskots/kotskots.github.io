@@ -17,7 +17,7 @@ jobs:
           ref: reclaim-v04-beta1-build3
 
       - name: Set up Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -27,6 +27,7 @@ jobs:
         run: |
           $baseParts = @('part00','part01','part02','part03','part04','part05','part06')
           $base64 = ($baseParts | ForEach-Object { Get-Content (Join-Path '.reclaim-v03/android' $_) -Raw }) -join ''
+          $base64 = [regex]::Replace($base64, '[^A-Za-z0-9+/=]', '')
           $baseZip = Join-Path $env:RUNNER_TEMP 'reclaim-v03.zip'
           [IO.File]::WriteAllBytes($baseZip, [Convert]::FromBase64String($base64))
           $dst = Join-Path $env:RUNNER_TEMP 'reclaim-v041-beta2'
@@ -47,6 +48,7 @@ jobs:
 
           $betaParts = @('part00','part01','part02','part03','part04','part05','part06')
           $beta64 = ($betaParts | ForEach-Object { Get-Content (Join-Path '.reclaim-v04-beta1b' $_) -Raw }) -join ''
+          $beta64 = [regex]::Replace($beta64, '[^A-Za-z0-9+/=]', '')
           $betaGz = Join-Path $env:RUNNER_TEMP 'beta1.patch.gz'
           [IO.File]::WriteAllBytes($betaGz, [Convert]::FromBase64String($beta64))
           $betaPatch = Join-Path $env:RUNNER_TEMP 'beta1.patch'
