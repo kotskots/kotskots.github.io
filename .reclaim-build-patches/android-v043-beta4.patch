@@ -1,0 +1,223 @@
+--- a/app/build.gradle.kts
++++ b/app/build.gradle.kts
+@@ -12,8 +12,8 @@
+         applicationId = "com.kostas.reclaim"
+         minSdk = 26
+         targetSdk = 35
+-        versionCode = 6
+-        versionName = "0.4.1-beta2"
++        versionCode = 8
++        versionName = "0.4.3-beta4"
+     }
+ 
+     buildFeatures {
+--- a/app/src/main/java/com/kostas/reclaim/FocusPreferences.kt
++++ b/app/src/main/java/com/kostas/reclaim/FocusPreferences.kt
+@@ -56,13 +56,22 @@
+             .apply()
+     }
+ 
+-    fun stop(context: Context, updatedAt: Long = System.currentTimeMillis()) {
++    fun isLockedActive(context: Context): Boolean =
++        isActive(context) && strictMode(context).equals("LOCKED", ignoreCase = true)
++
++    fun stop(
++        context: Context,
++        updatedAt: Long = System.currentTimeMillis(),
++        force: Boolean = false
++    ): Boolean {
++        if (!force && isLockedActive(context)) return false
+         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+             .edit()
+             .putLong(UNTIL, 0L)
+             .putLong(UPDATED_AT, updatedAt)
+             .putString(SESSION_ID, "")
+             .apply()
++        return true
+     }
+ 
+     fun startUntil(
+--- a/app/src/main/java/com/kostas/reclaim/WindowsSync.kt
++++ b/app/src/main/java/com/kostas/reclaim/WindowsSync.kt
+@@ -152,6 +152,8 @@
+     }
+ 
+     fun applyIfNewer(context: Context, remote: RemoteSessionState): Boolean {
++        // A local Locked session is authoritative until its own timer expires.
++        if (FocusPreferences.isLockedActive(context)) return false
+         if (remote.updatedAt <= FocusPreferences.updatedAt(context)) return false
+         if (remote.active && remote.until > System.currentTimeMillis()) {
+             FocusPreferences.startUntil(context, remote.until, remote.intention, remote.updatedAt, remote.profile, remote.strictMode, remote.sessionId)
+--- a/app/src/main/java/com/kostas/reclaim/CloudSync.kt
++++ b/app/src/main/java/com/kostas/reclaim/CloudSync.kt
+@@ -203,6 +203,8 @@
+     }
+ 
+     fun applyIfNewer(context: Context, remote: CloudState): Boolean {
++        // A local Locked session is authoritative until its own timer expires.
++        if (FocusPreferences.isLockedActive(context)) return false
+         if (remote.updatedAt <= FocusPreferences.updatedAt(context)) return false
+         if (remote.active && remote.until > System.currentTimeMillis()) {
+             FocusPreferences.startUntil(
+--- a/app/src/main/java/com/kostas/reclaim/WorkBlockAccessibilityService.kt
++++ b/app/src/main/java/com/kostas/reclaim/WorkBlockAccessibilityService.kt
+@@ -33,7 +33,17 @@
+     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+         event ?: return
+         val packageName = event.packageName?.toString() ?: return
+-        if (packageName == applicationContext.packageName) return
++        if (packageName == applicationContext.packageName) {
++            // Accessibility overlays themselves emit Reclaim package events.
++            // Ignore those events; only reset state when the real Reclaim activity opens.
++            val ownClass = event.className?.toString().orEmpty()
++            if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
++                ownClass == MainActivity::class.java.name) {
++                frictionBypassPackage = null
++                removeFrictionOverlay()
++            }
++            return
++        }
+ 
+         if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+             accountUsage(packageName)
+@@ -115,7 +125,7 @@
+             return true
+         }
+ 
+-        if (!active && packageName in repo.frictionPackages() && packageName != frictionBypassPackage) {
++        if (packageName in repo.frictionPackages() && packageName != frictionBypassPackage) {
+             showFrictionOverlay(packageName, repo)
+             return true
+         }
+--- a/app/src/main/java/com/kostas/reclaim/MainActivity.kt
++++ b/app/src/main/java/com/kostas/reclaim/MainActivity.kt
+@@ -855,11 +855,16 @@
+     }
+ 
+     val active = workUntil > System.currentTimeMillis()
++    val lockedActive = active && FocusPreferences.isLockedActive(context)
+     val recentFocus = remember(workUntil) { repo.loadFocusSessions().sortedByDescending { it.startedAt }.take(7) }
+ 
+     if (showStrictStop) StrictStopDialog(onDismiss = { showStrictStop = false }) { reason ->
+-        ProductivityRepository(context).logEvent("early_exit", FocusPreferences.profile(context), metadata = reason)
+-        FocusPreferences.stop(context); workUntil = 0L; showStrictStop = false; pushEverywhere()
++        if (FocusPreferences.stop(context)) {
++            ProductivityRepository(context).logEvent("early_exit", FocusPreferences.profile(context), metadata = reason)
++            workUntil = 0L
++            pushEverywhere()
++        }
++        showStrictStop = false
+     }
+ 
+     LazyColumn(
+@@ -872,6 +877,17 @@
+             Text("One work session across Android, Reclaim Cloud and every paired PC.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+         }
+ 
++        if (lockedActive) {
++            item {
++                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
++                    Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
++                        Text("LOCKED MODE", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
++                        Text("This session cannot be stopped from Reclaim or weakened by changing blocking settings until ${formatClock(workUntil)}.")
++                    }
++                }
++            }
++        }
++
+         item {
+             Card(colors = CardDefaults.cardColors(containerColor = if (active) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface)) {
+                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+@@ -884,7 +900,12 @@
+                         val strict = runCatching { StrictMode.valueOf(FocusPreferences.strictMode(context)) }.getOrDefault(StrictMode.NORMAL)
+                         Button(onClick = {
+                             when (strict) {
+-                                StrictMode.NORMAL -> { FocusPreferences.stop(context); workUntil = 0L; pushEverywhere() }
++                                StrictMode.NORMAL -> {
++                                    if (FocusPreferences.stop(context)) {
++                                        workUntil = 0L
++                                        pushEverywhere()
++                                    }
++                                }
+                                 StrictMode.STRICT -> showStrictStop = true
+                                 StrictMode.LOCKED -> Unit
+                             }
+@@ -1113,15 +1134,22 @@
+         item { OutlinedTextField(query, { query = it }, modifier = Modifier.fillMaxWidth(), placeholder = { Text("Search installed apps") }, singleLine = true) }
+         items(apps.filter { query.isBlank() || it.label.contains(query, true) }.take(120), key = { it.packageName }) { app ->
+             val checked = app.packageName in selectedApps
+-            Card(onClick = {
+-                selectedApps = if (checked) selectedApps - app.packageName else selectedApps + app.packageName
+-                FocusPreferences.setBlockedPackages(context, selectedApps)
+-            }) {
++            Card(
++                onClick = {
++                    selectedApps = if (checked) selectedApps - app.packageName else selectedApps + app.packageName
++                    FocusPreferences.setBlockedPackages(context, selectedApps)
++                },
++                enabled = !lockedActive
++            ) {
+                 Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+-                    Checkbox(checked = checked, onCheckedChange = {
+-                        selectedApps = if (checked) selectedApps - app.packageName else selectedApps + app.packageName
+-                        FocusPreferences.setBlockedPackages(context, selectedApps)
+-                    })
++                    Checkbox(
++                        checked = checked,
++                        enabled = !lockedActive,
++                        onCheckedChange = {
++                            selectedApps = if (checked) selectedApps - app.packageName else selectedApps + app.packageName
++                            FocusPreferences.setBlockedPackages(context, selectedApps)
++                        }
++                    )
+                     Column(Modifier.weight(1f)) {
+                         Text(app.label)
+                         Text(app.packageName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+@@ -1139,7 +1167,7 @@
+                             Text("System-wide DNS filtering", fontWeight = FontWeight.Bold)
+                             Text("Uses Android's local VPN slot. Reclaim does not decrypt HTTPS traffic.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                         }
+-                        Switch(checked = websiteEnabled, onCheckedChange = { requested ->
++                        Switch(checked = websiteEnabled, enabled = !lockedActive, onCheckedChange = { requested ->
+                             if (requested) {
+                                 val prepareIntent = VpnService.prepare(context)
+                                 if (prepareIntent != null) vpnPermissionLauncher.launch(prepareIntent)
+@@ -1157,7 +1185,7 @@
+                     }
+                     Row(verticalAlignment = Alignment.CenterVertically) {
+                         Text("Only while a Work Session is active", modifier = Modifier.weight(1f))
+-                        Switch(checked = workOnly, onCheckedChange = {
++                        Switch(checked = workOnly, enabled = !lockedActive, onCheckedChange = {
+                             workOnly = it
+                             WebsitePreferences.setWorkOnly(context, it)
+                         })
+@@ -1166,7 +1194,7 @@
+                     WebsiteCategory.entries.forEach { category ->
+                         val checked = category in categories
+                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+-                            Checkbox(checked = checked, onCheckedChange = {
++                            Checkbox(checked = checked, enabled = !lockedActive, onCheckedChange = {
+                                 categories = if (checked) categories - category else categories + category
+                                 WebsitePreferences.setCategories(context, categories)
+                                 pushEverywhere()
+@@ -1184,9 +1212,9 @@
+                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                     Text("Custom blocked sites", fontWeight = FontWeight.Bold)
+                     Row(verticalAlignment = Alignment.CenterVertically) {
+-                        OutlinedTextField(domainText, { domainText = it }, modifier = Modifier.weight(1f), label = { Text("example.com") }, singleLine = true)
++                        OutlinedTextField(domainText, { domainText = it }, enabled = !lockedActive, modifier = Modifier.weight(1f), label = { Text("example.com") }, singleLine = true)
+                         Spacer(Modifier.width(8.dp))
+-                        FilledIconButton(enabled = domainText.isNotBlank(), onClick = {
++                        FilledIconButton(enabled = domainText.isNotBlank() && !lockedActive, onClick = {
+                             customDomains = customDomains + domainText.trim()
+                             WebsitePreferences.setCustomDomains(context, customDomains)
+                             customDomains = WebsitePreferences.customDomains(context)
+@@ -1197,7 +1225,7 @@
+                     customDomains.sorted().forEach { domain ->
+                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                             Text(domain, modifier = Modifier.weight(1f))
+-                            TextButton(onClick = {
++                            TextButton(enabled = !lockedActive, onClick = {
+                                 customDomains = customDomains - domain
+                                 WebsitePreferences.setCustomDomains(context, customDomains)
+                                 pushEverywhere()
