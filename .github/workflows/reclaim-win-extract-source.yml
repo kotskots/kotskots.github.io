@@ -1,0 +1,22 @@
+name: Temporary extract Reclaim Windows beta1 source
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/reclaim-win-extract-source.yml'
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source branch
+        uses: actions/checkout@v4
+        with:
+          ref: reclaim-win-v03-beta1-build2
+      - name: Upload source zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: ReclaimWindows-v0.3-beta1-source
+          path: .reclaim-win-v03-beta1/source.zip
+          if-no-files-found: error
