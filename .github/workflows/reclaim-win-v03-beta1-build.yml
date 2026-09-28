@@ -28,7 +28,9 @@ jobs:
           if (-not (Test-Path $zip)) { throw 'Feature source ZIP missing' }
           $dst = Join-Path $env:RUNNER_TEMP 'reclaim-win-v03-beta1'
           Remove-Item -Recurse -Force $dst -ErrorAction SilentlyContinue
-          Expand-Archive -Path $zip -DestinationPath $dst -Force
+          New-Item -ItemType Directory -Path $dst | Out-Null
+          tar -xf $zip -C $dst
+          if ($LASTEXITCODE -ne 0) { throw 'tar extraction failed' }
           $proj = Join-Path $dst 'ReclaimWindows\ReclaimWindows.csproj'
           if (-not (Test-Path $proj)) { throw 'ReclaimWindows.csproj missing' }
           $text = Get-Content $proj -Raw
@@ -41,6 +43,7 @@ jobs:
           $root = Join-Path $env:RUNNER_TEMP 'reclaim-win-v03-beta1\ReclaimWindows'
           $proj = Join-Path $root 'ReclaimWindows.csproj'
           dotnet publish $proj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:DebugType=None -p:DebugSymbols=false
+          if ($LASTEXITCODE -ne 0) { throw 'dotnet publish failed' }
           $exe = Join-Path $root 'bin\Release\net8.0-windows\win-x64\publish\ReclaimWindows.exe'
           if (-not (Test-Path $exe)) { throw 'ReclaimWindows.exe not produced' }
           Copy-Item $exe "$env:RUNNER_TEMP\ReclaimWindows-v0.3-beta1.exe"
