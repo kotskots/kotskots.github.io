@@ -2,19 +2,80 @@ name: Temporary Reclaim Android v0.4.1 beta2 Build
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
       - '.github/workflows/reclaim-android-v041-beta2-build.yml'
 
 jobs:
   android:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     steps:
-      - name: Checkout Reclaim source assets
+      - name: Checkout feature build branch
         uses: actions/checkout@v4
         with:
           ref: reclaim-v04-beta1-build3
+
+      - name: Reconstruct v0.4 alpha base
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .reclaim-v03/android/part* > /tmp/reclaim-v03.b64
+          base64 --decode /tmp/reclaim-v03.b64 > /tmp/Reclaim-v0.3-source.zip
+          unzip -t /tmp/Reclaim-v0.3-source.zip >/dev/null
+          rm -rf /tmp/reclaim-v04
+          mkdir -p /tmp/reclaim-v04
+          unzip -q /tmp/Reclaim-v0.3-source.zip -d /tmp/reclaim-v04
+          cd /tmp/reclaim-v04/Reclaim
+          patch -p1 < "$GITHUB_WORKSPACE/.reclaim-v04/reclaim-v04.patch"
+          cp "$GITHUB_WORKSPACE/.reclaim-v04/CloudSync.kt" app/src/main/java/com/kostas/reclaim/CloudSync.kt
+          cp "$GITHUB_WORKSPACE/.reclaim-v04/CloudSyncService.kt" app/src/main/java/com/kostas/reclaim/CloudSyncService.kt
+
+      - name: Apply verified beta1 feature patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .reclaim-v04-beta1b/part* > /tmp/reclaim-beta-patch.b64
+          base64 --decode /tmp/reclaim-beta-patch.b64 > /tmp/reclaim-v04-beta1.patch.gz
+          echo 'fba2c66f00ee626080b183da93b0a8b4266fe0ddd56e49346762ed77e954e6b2  /tmp/reclaim-v04-beta1.patch.gz' | sha256sum -c -
+          gzip -dc /tmp/reclaim-v04-beta1.patch.gz > /tmp/reclaim-v04-beta1.patch
+          cd /tmp/reclaim-v04/Reclaim
+          patch -p1 < /tmp/reclaim-v04-beta1.patch
+          grep -q 'versionCode = 5' app/build.gradle.kts
+          grep -q 'versionName = "0.4.0-beta1"' app/build.gradle.kts
+
+      - name: Apply beta2 in-app friction overlay
+        shell: python
+        run: |
+          from pathlib import Path
+          root = Path('/tmp/reclaim-v04/Reclaim')
+          service = Path('.reclaim-v04-beta2-overrides/WorkBlockAccessibilityService.kt').read_text()
+          old = '        if (packageName == applicationContext.packageName) return'
+          new = '''        if (packageName == applicationContext.packageName) {
+              frictionBypassPackage = null
+              removeFrictionOverlay()
+              return
+          }'''
+          if old not in service:
+              raise SystemExit('Could not patch Reclaim re-entry reset')
+          service = service.replace(old, new)
+          (root/'app/src/main/java/com/kostas/reclaim/WorkBlockAccessibilityService.kt').write_text(service)
+
+          gradle = (root/'app/build.gradle.kts').read_text()
+          gradle = gradle.replace('versionCode = 5', 'versionCode = 6')
+          gradle = gradle.replace('versionName = "0.4.0-beta1"', 'versionName = "0.4.1-beta2"')
+          (root/'app/build.gradle.kts').write_text(gradle)
+
+          hub_path = root/'app/src/main/java/com/kostas/reclaim/FeatureHubScreen.kt'
+          hub = hub_path.read_text()
+          hub = hub.replace('Selected apps are interrupted with a reason prompt and countdown when you open them outside a focus session.', 'Selected apps show a Reclaim pause OVER the app every time you enter them. The app stays open underneath while you wait and choose why you opened it.')
+          hub = hub.replace('Manage distraction apps', 'Choose apps for pause screen')
+          hub = hub.replace('Distraction apps', 'Pause screen apps')
+          hub_path.write_text(hub)
 
       - name: Set up Java 17
         uses: actions/setup-java@v5
@@ -22,81 +83,67 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Reconstruct v0.3 and apply v0.4 beta sources
-        shell: pwsh
-        run: |
-          $baseParts = @('part00','part01','part02','part03','part04','part05','part06')
-          $base64 = ($baseParts | ForEach-Object { Get-Content (Join-Path '.reclaim-v03/android' $_) -Raw }) -join ''
-          $base64 = [regex]::Replace($base64, '[^A-Za-z0-9+/=]', '')
-          $baseZip = Join-Path $env:RUNNER_TEMP 'reclaim-v03.zip'
-          [IO.File]::WriteAllBytes($baseZip, [Convert]::FromBase64String($base64))
-          $dst = Join-Path $env:RUNNER_TEMP 'reclaim-v041-beta2'
-          New-Item -ItemType Directory -Path $dst -Force | Out-Null
-          Expand-Archive -Path $baseZip -DestinationPath $dst -Force
-          $root = Join-Path $dst 'Reclaim'
-          Push-Location $root
-          git init | Out-Null
-          git config user.name build
-          git config user.email build@local
-          git add .
-          git commit -m v03-base | Out-Null
-          git apply (Join-Path $env:GITHUB_WORKSPACE '.reclaim-v04/reclaim-v04.patch')
-          if ($LASTEXITCODE -ne 0) { throw 'v0.4 patch failed' }
-          Copy-Item (Join-Path $env:GITHUB_WORKSPACE '.reclaim-v04/CloudSync.kt') 'app/src/main/java/com/kostas/reclaim/CloudSync.kt' -Force
-          Copy-Item (Join-Path $env:GITHUB_WORKSPACE '.reclaim-v04/CloudSyncService.kt') 'app/src/main/java/com/kostas/reclaim/CloudSyncService.kt' -Force
-          Pop-Location
-
-          $betaParts = @('part00','part01','part02','part03','part04','part05','part06')
-          $beta64 = ($betaParts | ForEach-Object { Get-Content (Join-Path '.reclaim-v04-beta1b' $_) -Raw }) -join ''
-          $beta64 = [regex]::Replace($beta64, '[^A-Za-z0-9+/=]', '')
-          $betaGz = Join-Path $env:RUNNER_TEMP 'beta1.patch.gz'
-          [IO.File]::WriteAllBytes($betaGz, [Convert]::FromBase64String($beta64))
-          $betaPatch = Join-Path $env:RUNNER_TEMP 'beta1.patch'
-          $input = [IO.File]::OpenRead($betaGz)
-          $gzip = [IO.Compression.GzipStream]::new($input, [IO.Compression.CompressionMode]::Decompress)
-          $output = [IO.File]::Create($betaPatch)
-          $gzip.CopyTo($output)
-          $output.Dispose(); $gzip.Dispose(); $input.Dispose()
-          Push-Location $root
-          git apply --check $betaPatch
-          if ($LASTEXITCODE -ne 0) { throw 'beta1 patch check failed' }
-          git apply $betaPatch
-          if ($LASTEXITCODE -ne 0) { throw 'beta1 patch failed' }
-          Copy-Item (Join-Path $env:GITHUB_WORKSPACE '.reclaim-v04-beta2-overrides/WorkBlockAccessibilityService.kt') 'app/src/main/java/com/kostas/reclaim/WorkBlockAccessibilityService.kt' -Force
-
-          $servicePath = 'app/src/main/java/com/kostas/reclaim/WorkBlockAccessibilityService.kt'
-          $service = Get-Content $servicePath -Raw
-          $oldOwn = '        if (packageName == applicationContext.packageName) return'
-          $newOwn = "        if (packageName == applicationContext.packageName) {`n            frictionBypassPackage = null`n            removeFrictionOverlay()`n            return`n        }"
-          if (-not $service.Contains($oldOwn)) { throw 'Could not patch Reclaim re-entry reset' }
-          $service = $service.Replace($oldOwn, $newOwn)
-          Set-Content $servicePath $service -NoNewline
-
-          $gradle = Get-Content 'app/build.gradle.kts' -Raw
-          $gradle = $gradle -replace 'versionCode\s*=\s*5', 'versionCode = 6'
-          $gradle = $gradle -replace 'versionName\s*=\s*"0\.4\.0-beta1"', 'versionName = "0.4.1-beta2"'
-          Set-Content 'app/build.gradle.kts' $gradle -NoNewline
-
-          $hub = Get-Content 'app/src/main/java/com/kostas/reclaim/FeatureHubScreen.kt' -Raw
-          $hub = $hub.Replace('Selected apps are interrupted with a reason prompt and countdown when you open them outside a focus session.', 'Selected apps show a Reclaim pause OVER the app every time you enter them. The app stays open underneath while you wait and choose why you opened it.')
-          $hub = $hub.Replace('Manage distraction apps', 'Choose apps for pause screen')
-          $hub = $hub.Replace('Distraction apps', 'Pause screen apps')
-          Set-Content 'app/src/main/java/com/kostas/reclaim/FeatureHubScreen.kt' $hub -NoNewline
-          Pop-Location
-
-      - name: Build unsigned release APK
+      - name: Install Android SDK
         shell: bash
         run: |
-          cd "$RUNNER_TEMP/reclaim-v041-beta2/Reclaim"
-          chmod +x gradlew
-          ./gradlew :app:assembleRelease --no-daemon
-          test -f app/build/outputs/apk/release/app-release-unsigned.apk
-          cp app/build/outputs/apk/release/app-release-unsigned.apk "$RUNNER_TEMP/Reclaim-v0.4.1-beta2-unsigned.apk"
-          sha256sum "$RUNNER_TEMP/Reclaim-v0.4.1-beta2-unsigned.apk"
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" "platform-tools"
 
-      - name: Upload unsigned APK
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-version: '8.9'
+
+      - name: Build Android release
+        working-directory: /tmp/reclaim-v04/Reclaim
+        run: gradle --no-daemon :app:assembleRelease --stacktrace
+
+      - name: Download permanent Reclaim signing key
+        uses: actions/download-artifact@v5
+        with:
+          name: Reclaim-signing-backup-v0.2
+          path: /tmp/reclaim-signing-artifact
+          github-token: ${{ github.token }}
+          repository: kotskots/kotskots.github.io
+          run-id: 36263273293
+
+      - name: Sign and verify APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/reclaim-signing
+          unzip -q /tmp/reclaim-signing-artifact/Reclaim-signing-backup-v0.2.zip -d /tmp/reclaim-signing
+          PASS=$(cat /tmp/reclaim-signing/reclaim-keystore-password.txt)
+          UNSIGNED=/tmp/reclaim-v04/Reclaim/app/build/outputs/apk/release/app-release-unsigned.apk
+          ALIGNED=/tmp/Reclaim-v0.4.1-beta2-aligned.apk
+          SIGNED=/tmp/Reclaim-v0.4.1-beta2.apk
+          ZIPALIGN="$ANDROID_HOME/build-tools/35.0.0/zipalign"
+          APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
+          "$ZIPALIGN" -p -f 4 "$UNSIGNED" "$ALIGNED"
+          "$APKSIGNER" sign \
+            --ks /tmp/reclaim-signing/reclaim-release.jks \
+            --ks-key-alias reclaim \
+            --ks-pass "pass:$PASS" \
+            --key-pass "pass:$PASS" \
+            --v1-signing-enabled true \
+            --v2-signing-enabled true \
+            --v3-signing-enabled true \
+            --out "$SIGNED" \
+            "$ALIGNED"
+          "$APKSIGNER" verify --verbose --print-certs "$SIGNED" | tee /tmp/reclaim-signature.txt
+          "$ZIPALIGN" -c -v 4 "$SIGNED" >/dev/null
+          "$AAPT" dump badging "$SIGNED" | head -n 3 | tee /tmp/reclaim-package.txt
+          grep -q "package: name='com.kostas.reclaim' versionCode='6' versionName='0.4.1-beta2'" /tmp/reclaim-package.txt
+          grep -q "Verified using v2 scheme (APK Signature Scheme v2): true" /tmp/reclaim-signature.txt
+          grep -q "Verified using v3 scheme (APK Signature Scheme v3): true" /tmp/reclaim-signature.txt
+          grep -q 'd5933ab2b7662c1606fb6b63e422eafe417e690fc5ca057de52d72cce571cd83' <(tr -d ':' < /tmp/reclaim-signature.txt | tr '[:upper:]' '[:lower:]')
+          sha256sum "$SIGNED"
+
+      - name: Upload Android APK
         uses: actions/upload-artifact@v4
         with:
-          name: Reclaim-v0.4.1-beta2-unsigned
-          path: ${{ runner.temp }}/Reclaim-v0.4.1-beta2-unsigned.apk
+          name: Reclaim-v0.4.1-beta2-Android
+          path: /tmp/Reclaim-v0.4.1-beta2.apk
           if-no-files-found: error
