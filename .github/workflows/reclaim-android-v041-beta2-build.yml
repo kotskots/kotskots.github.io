@@ -1,0 +1,92 @@
+name: Temporary Reclaim Android v0.4.1 beta2 Build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/reclaim-android-v041-beta2-build.yml'
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout Reclaim source assets
+        uses: actions/checkout@v4
+        with:
+          ref: reclaim-v04-beta1-build3
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Reconstruct v0.3 and apply v0.4 beta sources
+        shell: pwsh
+        run: |
+          $baseParts = @('part00','part01','part02','part03','part04','part05','part06')
+          $base64 = ($baseParts | ForEach-Object { Get-Content (Join-Path '.reclaim-v03/android' $_) -Raw }) -join ''
+          $baseZip = Join-Path $env:RUNNER_TEMP 'reclaim-v03.zip'
+          [IO.File]::WriteAllBytes($baseZip, [Convert]::FromBase64String($base64))
+          $dst = Join-Path $env:RUNNER_TEMP 'reclaim-v041-beta2'
+          New-Item -ItemType Directory -Path $dst -Force | Out-Null
+          Expand-Archive -Path $baseZip -DestinationPath $dst -Force
+          $root = Join-Path $dst 'Reclaim'
+          Push-Location $root
+          git init | Out-Null
+          git config user.name build
+          git config user.email build@local
+          git add .
+          git commit -m v03-base | Out-Null
+          git apply (Join-Path $env:GITHUB_WORKSPACE '.reclaim-v04/reclaim-v04.patch')
+          if ($LASTEXITCODE -ne 0) { throw 'v0.4 patch failed' }
+          Copy-Item (Join-Path $env:GITHUB_WORKSPACE '.reclaim-v04/CloudSync.kt') 'app/src/main/java/com/kostas/reclaim/CloudSync.kt' -Force
+          Copy-Item (Join-Path $env:GITHUB_WORKSPACE '.reclaim-v04/CloudSyncService.kt') 'app/src/main/java/com/kostas/reclaim/CloudSyncService.kt' -Force
+          Pop-Location
+
+          $betaParts = @('part00','part01','part02','part03','part04','part05','part06')
+          $beta64 = ($betaParts | ForEach-Object { Get-Content (Join-Path '.reclaim-v04-beta1b' $_) -Raw }) -join ''
+          $betaGz = Join-Path $env:RUNNER_TEMP 'beta1.patch.gz'
+          [IO.File]::WriteAllBytes($betaGz, [Convert]::FromBase64String($beta64))
+          $betaPatch = Join-Path $env:RUNNER_TEMP 'beta1.patch'
+          $input = [IO.File]::OpenRead($betaGz)
+          $gzip = [IO.Compression.GzipStream]::new($input, [IO.Compression.CompressionMode]::Decompress)
+          $output = [IO.File]::Create($betaPatch)
+          $gzip.CopyTo($output)
+          $output.Dispose(); $gzip.Dispose(); $input.Dispose()
+          Push-Location $root
+          git apply --check $betaPatch
+          if ($LASTEXITCODE -ne 0) { throw 'beta1 patch check failed' }
+          git apply $betaPatch
+          if ($LASTEXITCODE -ne 0) { throw 'beta1 patch failed' }
+          Copy-Item (Join-Path $env:GITHUB_WORKSPACE '.reclaim-v04-beta2-overrides/WorkBlockAccessibilityService.kt') 'app/src/main/java/com/kostas/reclaim/WorkBlockAccessibilityService.kt' -Force
+
+          $gradle = Get-Content 'app/build.gradle.kts' -Raw
+          $gradle = $gradle -replace 'versionCode\s*=\s*5', 'versionCode = 6'
+          $gradle = $gradle -replace 'versionName\s*=\s*"0\.4\.0-beta1"', 'versionName = "0.4.1-beta2"'
+          Set-Content 'app/build.gradle.kts' $gradle -NoNewline
+
+          $hub = Get-Content 'app/src/main/java/com/kostas/reclaim/FeatureHubScreen.kt' -Raw
+          $hub = $hub.Replace('Selected apps are interrupted with a reason prompt and countdown when you open them outside a focus session.', 'Selected apps show a Reclaim pause OVER the app every time you enter them. The app stays open underneath while you wait and choose why you opened it.')
+          $hub = $hub.Replace('Manage distraction apps', 'Choose apps for pause screen')
+          $hub = $hub.Replace('Distraction apps', 'Pause screen apps')
+          Set-Content 'app/src/main/java/com/kostas/reclaim/FeatureHubScreen.kt' $hub -NoNewline
+          Pop-Location
+
+      - name: Build unsigned release APK
+        shell: bash
+        run: |
+          cd "$RUNNER_TEMP/reclaim-v041-beta2/Reclaim"
+          chmod +x gradlew
+          ./gradlew :app:assembleRelease --no-daemon
+          test -f app/build/outputs/apk/release/app-release-unsigned.apk
+          cp app/build/outputs/apk/release/app-release-unsigned.apk "$RUNNER_TEMP/Reclaim-v0.4.1-beta2-unsigned.apk"
+          sha256sum "$RUNNER_TEMP/Reclaim-v0.4.1-beta2-unsigned.apk"
+
+      - name: Upload unsigned APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Reclaim-v0.4.1-beta2-unsigned
+          path: ${{ runner.temp }}/Reclaim-v0.4.1-beta2-unsigned.apk
+          if-no-files-found: error
