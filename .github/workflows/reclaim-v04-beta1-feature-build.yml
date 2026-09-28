@@ -110,3 +110,5 @@ jobs:
             /tmp/Reclaim-v0.4-beta1-package.txt
             /tmp/Reclaim-v0.4-beta1-sha256.txt
           if-no-files-found: error
+
+# retry after all feature source parts were uploaded
