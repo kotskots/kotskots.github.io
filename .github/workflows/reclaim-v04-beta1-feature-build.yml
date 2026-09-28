@@ -38,7 +38,8 @@ jobs:
             "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part00" \
             "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part01" \
             "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part02a" \
-            "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part02b" \
+            "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part02b1" \
+            "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part02b2" \
             "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part03" \
             "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part04" \
             "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part05" > /tmp/beta.patch.gz.b64
