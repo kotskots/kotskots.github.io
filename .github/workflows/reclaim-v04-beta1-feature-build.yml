@@ -34,21 +34,22 @@ jobs:
           patch -p1 < "$GITHUB_WORKSPACE/.reclaim-v04/reclaim-v04.patch"
           cp "$GITHUB_WORKSPACE/.reclaim-v04/CloudSync.kt" app/src/main/java/com/kostas/reclaim/CloudSync.kt
           cp "$GITHUB_WORKSPACE/.reclaim-v04/CloudSyncService.kt" app/src/main/java/com/kostas/reclaim/CloudSyncService.kt
-          cat \
-            "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part00" \
-            "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part01" \
-            "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part02a" \
-            "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part02b1" \
-            "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part02b2" \
-            "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part03" \
-            "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part04" \
-            "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part05" > /tmp/beta.patch.gz.b64
+          cat "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part00" "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part01" "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part02a" "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part02b1" "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part02b2" "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part03" "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part04" "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part05" > /tmp/beta.patch.gz.b64
           base64 --decode /tmp/beta.patch.gz.b64 > /tmp/beta.patch.gz
           echo '15925b1f309666b3faec00f1dbd1d0e5db234fbd7d45bc38197673c0f1d1d14d  /tmp/beta.patch.gz' | sha256sum -c -
           gzip -dc /tmp/beta.patch.gz > /tmp/beta.patch
-          patch -p5 < /tmp/beta.patch
+          set +e
+          patch --batch -p5 < /tmp/beta.patch
+          rc=$?
+          set -e
+          bad_rejects=$(find . -name '*.rej' ! -path './README.md.rej' -print)
+          if [ -n "$bad_rejects" ]; then echo "$bad_rejects"; exit 1; fi
+          rm -f README.md.rej
           grep -q 'versionCode = 5' app/build.gradle.kts
           grep -q 'versionName = "0.4.0-beta1"' app/build.gradle.kts
+          grep -q 'whitelistMode' app/src/main/java/com/kostas/reclaim/FocusPreferences.kt
+          grep -q 'DistractionPromptActivity' app/src/main/AndroidManifest.xml
+          grep -q 'pushEverywhere' app/src/main/java/com/kostas/reclaim/MainActivity.kt
 
       - name: Set up Java 17
         uses: actions/setup-java@v5
