@@ -1,0 +1,23 @@
+--- a/app/src/main/java/com/kostas/reclaim/FeatureHubScreen.kt
++++ b/app/src/main/java/com/kostas/reclaim/FeatureHubScreen.kt
+@@ -383,7 +383,7 @@
+         val projectId = projects.firstOrNull { it.name.equals(b.trim(), true) }?.id
+         goals = goals + GoalItem(System.currentTimeMillis(), a, projectId); prod.saveGoals(goals); showGoal = false
+     }
+-    if (showProfile) ProfileDialog(onDismiss = { showProfile = false }) { profile ->
++    if (showProfile) ProfileDialog(apps = launchableApps, onDismiss = { showProfile = false }) { profile ->
+         profiles = profiles + profile; prod.saveProfiles(profiles); showProfile = false
+     }
+     if (showSchedule) ScheduleDialog(profiles, onDismiss = { showSchedule = false }) { schedule ->
+--- a/app/src/main/java/com/kostas/reclaim/MainActivity.kt
++++ b/app/src/main/java/com/kostas/reclaim/MainActivity.kt
+@@ -684,7 +684,8 @@
+     var habitText by remember { mutableStateOf("") }
+     var targetText by remember { mutableStateOf("7") }
+     var minMinutesText by remember { mutableStateOf("0") }
+-    val productivity = remember { ProductivityRepository(androidx.compose.ui.platform.LocalContext.current) }
++    val context = androidx.compose.ui.platform.LocalContext.current
++    val productivity = remember(context) { ProductivityRepository(context) }
+     var smokingPlan by remember { mutableStateOf(productivity.loadSmokingPlan()) }
+     val today = LocalDate.now()
+     val todayKey = today.toString()
