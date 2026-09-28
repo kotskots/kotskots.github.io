@@ -24,7 +24,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat .reclaim-v04-beta1-feature/part00 .reclaim-v04-beta1-feature/part01 .reclaim-v04-beta1-feature/part02 .reclaim-v04-beta1-feature/part03 .reclaim-v04-beta1-feature/part04 > /tmp/reclaim-feature.b64
+          cat .reclaim-v04-beta1-feature/part00 .reclaim-v04-beta1-feature/part00b .reclaim-v04-beta1-feature/part00c .reclaim-v04-beta1-feature/part01 .reclaim-v04-beta1-feature/part02 .reclaim-v04-beta1-feature/part03 .reclaim-v04-beta1-feature/part04 > /tmp/reclaim-feature.b64
           base64 --decode /tmp/reclaim-feature.b64 > /tmp/Reclaim-v0.4-beta1-feature-source.zip
           echo "9778ef98f4f3c916f393f8ce07319f8c154147a17e937b0495aacea13a74e084  /tmp/Reclaim-v0.4-beta1-feature-source.zip" | sha256sum -c -
           unzip -t /tmp/Reclaim-v0.4-beta1-feature-source.zip >/dev/null
@@ -110,5 +110,3 @@ jobs:
             /tmp/Reclaim-v0.4-beta1-package.txt
             /tmp/Reclaim-v0.4-beta1-sha256.txt
           if-no-files-found: error
-
-# retry after all feature source parts were uploaded
