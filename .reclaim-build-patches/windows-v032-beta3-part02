@@ -1,0 +1,123 @@
+ention.Text); }
++        else
++        {
++            SaveRules();
++            var mode = _strictModeSelect.SelectedItem?.ToString() ?? "NORMAL";
++            _engine.StartSession((int)_minutes.Value, _intention.Text, mode);
++        }
+     }
+ 
+     private void AddExe()
+@@ -1178,6 +1473,11 @@
+ 
+     private void SaveRules()
+     {
++        if (_engine.IsLockedActive() && _engine.Config.ProtectSettingsWhenLocked)
++        {
++            MessageBox.Show(this, "Blocking settings are locked until the current Locked session ends.", "Reclaim — Locked Mode", MessageBoxButtons.OK, MessageBoxIcon.Information);
++            return;
++        }
+         var procs = _processes.Lines.Select(x => x.Trim()).Where(x => x.Length > 0);
+         var cats = _categoryChecks.Where(kv => kv.Value.Checked).Select(kv => kv.Key);
+         var domains = _domains.Lines.Select(x => x.Trim()).Where(x => x.Length > 0);
+@@ -1196,9 +1496,12 @@
+     {
+         var s = _engine.Snapshot();
+         _intention.Text = s.Intention;
++        if (s.Active && s.Until > DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() &&
++            _strictModeSelect.Items.Contains(s.StrictMode.ToUpperInvariant()))
++            _strictModeSelect.SelectedItem = s.StrictMode.ToUpperInvariant();
+         _deviceName.Text = _engine.Config.DeviceName;
+         if (string.IsNullOrWhiteSpace(_cloudServer.Text)) _cloudServer.Text = _engine.Config.CloudServerUrl;
+-        _startWithWindows.Checked = ReclaimEngine.IsStartWithWindows();
++        _startWithWindows.Checked = _engine.Config.StartWithWindows && ReclaimEngine.IsStartWithWindows();
+         _processes.Lines = s.BlockedProcesses.OrderBy(x => x).ToArray();
+         _domains.Lines = s.CustomDomains.OrderBy(x => x).ToArray();
+         _whitelistMode.Checked = _engine.Config.WhitelistMode;
+@@ -1232,6 +1535,7 @@
+         _pairCloud.Enabled = !_engine.CloudConfigured;
+         _disconnectCloud.Enabled = _engine.CloudConfigured;
+         var active = s.Active && s.Until > now;
++        var locked = active && s.StrictMode.Equals("LOCKED", StringComparison.OrdinalIgnoreCase);
+         _status.Text = active ? $"WORK SESSION ACTIVE  •  {s.Intention}" : "READY";
+         _status.ForeColor = active ? Color.FromArgb(169, 245, 200) : Color.Silver;
+         if (active)
+@@ -1247,6 +1551,12 @@
+             _startStop.Text = "START WORK SESSION";
+             _startStop.Enabled = true;
+         }
++        _strictModeSelect.Enabled = !active;
++        if (_trayEndItem != null) _trayEndItem.Enabled = active && !locked;
++        if (_trayExitItem != null) _trayExitItem.Enabled = !locked;
++        _settingsButton.Enabled = !(locked && _engine.Config.ProtectSettingsWhenLocked);
++        SetBlockingEditorEnabled(!(locked && _engine.Config.ProtectSettingsWhenLocked));
++
+         var (usage, blocked) = _engine.TodayStats();
+         var topUsage = usage.OrderByDescending(kv => kv.Value).Take(6).Select(kv => $"{kv.Key}: {TimeSpan.FromSeconds(kv.Value):hh\\:mm\\:ss}");
+         var topBlocked = blocked.OrderByDescending(kv => kv.Value).Take(6).Select(kv => $"{kv.Key}: {kv.Value} blocked");
+@@ -1254,6 +1564,54 @@
+                       "Blocked  •  " + (topBlocked.Any() ? string.Join("   |   ", topBlocked) : "No blocked attempts yet");
+     }
+ 
++    private void SetBlockingEditorEnabled(bool enabled)
++    {
++        _processes.Enabled = enabled;
++        _domains.Enabled = enabled;
++        _whitelistMode.Enabled = enabled;
++        _allowedProcesses.Enabled = enabled;
++        _budgets.Enabled = enabled;
++        _launchers.Enabled = enabled;
++        _startWithWindows.Enabled = enabled;
++        foreach (var cb in _categoryChecks.Values) cb.Enabled = enabled;
++    }
++
++    private void OpenSettings()
++    {
++        if (_engine.IsLockedActive() && _engine.Config.ProtectSettingsWhenLocked)
++        {
++            MessageBox.Show(this, "Settings are locked until the current Locked session ends.", "Reclaim — Locked Mode", MessageBoxButtons.OK, MessageBoxIcon.Information);
++            return;
++        }
++        using var dialog = new SettingsForm(_engine);
++        dialog.ShowDialog(this);
++        LoadFromEngine();
++    }
++
++    private void TryExitFromTray()
++    {
++        var state = _engine.Snapshot();
++        if (_engine.IsLockedActive())
++        {
++            MessageBox.Show(this, "Reclaim cannot exit while Locked Mode is active. It will remain in the tray until the timer ends.", "Reclaim — Locked Mode", MessageBoxButtons.OK, MessageBoxIcon.Information);
++            return;
++        }
++
++        if (state.Active)
++        {
++            var message = state.StrictMode.Equals("STRICT", StringComparison.OrdinalIgnoreCase)
++                ? "Strict Mode is active. Exit Reclaim and end this session early?"
++                : "A Work Session is active. Exit Reclaim and end the session?";
++            var result = MessageBox.Show(this, message, "Reclaim", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
++            if (result != DialogResult.Yes) return;
++            _engine.StopSession();
++        }
++
++        _reallyExit = true;
++        _tray.Visible = false;
++        Close();
++    }
++
+     private void RestoreWindow() { Show(); WindowState = FormWindowState.Normal; Activate(); }
+ 
+     protected override void Dispose(bool disposing)
+--- a/ReclaimWindows/ReclaimWindows.csproj
++++ b/ReclaimWindows/ReclaimWindows.csproj
+@@ -8,7 +8,7 @@
+     <ApplicationManifest>app.manifest</ApplicationManifest>
+     <AssemblyName>ReclaimWindows</AssemblyName>
+     <RootNamespace>ReclaimWindows</RootNamespace>
+-    <Version>0.3.0-beta1</Version>
++    <Version>0.3.2-beta3</Version>
+     <PublishSingleFile>true</PublishSingleFile>
+     <SelfContained>true</SelfContained>
+     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
