@@ -1,0 +1,53 @@
+name: Temporary Reclaim Windows v0.3 beta1 Feature Build
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/reclaim-win-v03-beta1-feature-build.yml'
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout feature build branch
+        uses: actions/checkout@v4
+        with:
+          ref: reclaim-win-v03-beta1-build2
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Verify and extract source
+        shell: pwsh
+        run: |
+          $zip = '.reclaim-win-v03-beta1\source.zip'
+          if (-not (Test-Path $zip)) { throw 'Source ZIP missing' }
+          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+          if ($hash -ne 'd524a658ecc18f042c24a9169708bda5fc4808273f6b80f8148245f334d918e5') { throw "Source hash mismatch: $hash" }
+          $dst = "$env:RUNNER_TEMP\reclaim-win-beta"
+          Remove-Item -Recurse -Force $dst -ErrorAction SilentlyContinue
+          Expand-Archive -Path $zip -DestinationPath $dst -Force
+          if (-not (Test-Path "$dst\ReclaimWindows\ReclaimWindows.csproj")) { throw 'Project missing' }
+
+      - name: Build Windows x64 single-file app
+        shell: pwsh
+        run: |
+          $proj = "$env:RUNNER_TEMP\reclaim-win-beta\ReclaimWindows\ReclaimWindows.csproj"
+          dotnet publish $proj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:DebugType=None -p:DebugSymbols=false
+          $exe = "$env:RUNNER_TEMP\reclaim-win-beta\ReclaimWindows\bin\Release\net8.0-windows\win-x64\publish\ReclaimWindows.exe"
+          if (-not (Test-Path $exe)) { throw 'ReclaimWindows.exe not produced' }
+          Copy-Item $exe "$env:RUNNER_TEMP\ReclaimWindows-v0.3-beta1.exe"
+          Get-FileHash "$env:RUNNER_TEMP\ReclaimWindows-v0.3-beta1.exe" -Algorithm SHA256
+          Get-Item "$env:RUNNER_TEMP\ReclaimWindows-v0.3-beta1.exe" | Format-List Name,Length,VersionInfo
+
+      - name: Upload Windows app
+        uses: actions/upload-artifact@v4
+        with:
+          name: ReclaimWindows-v0.3-beta1
+          path: ${{ runner.temp }}\ReclaimWindows-v0.3-beta1.exe
+          if-no-files-found: error
