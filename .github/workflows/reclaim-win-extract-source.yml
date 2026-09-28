@@ -1,4 +1,4 @@
-name: Temporary extract Reclaim Windows beta1 source
+name: Temporary extract reconstructed Reclaim Windows beta1 source
 
 on:
   push:
@@ -8,15 +8,55 @@ on:
 
 jobs:
   extract:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout source branch
         uses: actions/checkout@v4
         with:
-          ref: reclaim-win-v03-beta1-build2
-      - name: Upload source zip
+          ref: reclaim-win-v03-beta1-build3
+
+      - name: Reconstruct beta1 source
+        shell: pwsh
+        run: |
+          $names = @('part00','part01a','part01b','part02')
+          $b64 = ($names | ForEach-Object { Get-Content (Join-Path '.reclaim-win-v03' $_) -Raw }) -join ''
+          $zip = Join-Path $env:RUNNER_TEMP 'ReclaimWindows-v0.3-alpha1-source.zip'
+          [IO.File]::WriteAllBytes($zip, [Convert]::FromBase64String($b64))
+
+          $dst = Join-Path $env:RUNNER_TEMP 'reclaim-win-beta1-source'
+          Remove-Item -Recurse -Force $dst -ErrorAction SilentlyContinue
+          Expand-Archive -Path $zip -DestinationPath $dst -Force
+
+          $patchB64 = Get-Content '.reclaim-win-v03-beta1-patch\patch.gz.b64' -Raw
+          $patchGz = Join-Path $env:RUNNER_TEMP 'beta.patch.gz'
+          [IO.File]::WriteAllBytes($patchGz, [Convert]::FromBase64String($patchB64))
+          $patchFile = Join-Path $env:RUNNER_TEMP 'beta.patch'
+          $input = [IO.File]::OpenRead($patchGz)
+          $gzip = [IO.Compression.GzipStream]::new($input, [IO.Compression.CompressionMode]::Decompress)
+          $output = [IO.File]::Create($patchFile)
+          $gzip.CopyTo($output)
+          $output.Dispose(); $gzip.Dispose(); $input.Dispose()
+
+          Push-Location $dst
+          git init | Out-Null
+          git config user.name build
+          git config user.email build@local
+          git add .
+          git commit -m alpha-base | Out-Null
+          git apply --check $patchFile
+          if ($LASTEXITCODE -ne 0) { throw 'Feature patch check failed' }
+          git apply $patchFile
+          if ($LASTEXITCODE -ne 0) { throw 'Feature patch apply failed' }
+          Pop-Location
+
+          $program = Join-Path $dst 'ReclaimWindows\Program.cs'
+          if (-not (Test-Path $program)) { throw 'Program.cs missing after reconstruction' }
+          Get-Item $program | Format-List Name,Length
+
+      - name: Upload reconstructed source
         uses: actions/upload-artifact@v4
         with:
-          name: ReclaimWindows-v0.3-beta1-source
-          path: .reclaim-win-v03-beta1/source.zip
+          name: ReclaimWindows-v0.3-beta1-reconstructed-source
+          path: ${{ runner.temp }}\reclaim-win-beta1-source\ReclaimWindows
           if-no-files-found: error
