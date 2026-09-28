@@ -1,0 +1,88 @@
+name: Temporary Reclaim Windows v0.3.1 beta2 Build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/reclaim-win-v031-beta2-build.yml'
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout verified source branch
+        uses: actions/checkout@v4
+        with:
+          ref: reclaim-win-v03-beta1-build3
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Reconstruct beta1 source and enable autorun by default
+        shell: pwsh
+        run: |
+          $names = @('part00','part01a','part01b','part02')
+          $b64 = ($names | ForEach-Object { Get-Content (Join-Path '.reclaim-win-v03' $_) -Raw }) -join ''
+          $zip = Join-Path $env:RUNNER_TEMP 'ReclaimWindows-v0.3-alpha1-source.zip'
+          [IO.File]::WriteAllBytes($zip, [Convert]::FromBase64String($b64))
+
+          $dst = Join-Path $env:RUNNER_TEMP 'reclaim-win-v031-beta2'
+          Remove-Item -Recurse -Force $dst -ErrorAction SilentlyContinue
+          Expand-Archive -Path $zip -DestinationPath $dst -Force
+          $proj = Join-Path $dst 'ReclaimWindows\ReclaimWindows.csproj'
+          if (-not (Test-Path $proj)) { throw 'Alpha base project missing' }
+
+          $patchB64 = Get-Content '.reclaim-win-v03-beta1-patch\patch.gz.b64' -Raw
+          $patchGz = Join-Path $env:RUNNER_TEMP 'beta.patch.gz'
+          [IO.File]::WriteAllBytes($patchGz, [Convert]::FromBase64String($patchB64))
+          $patchFile = Join-Path $env:RUNNER_TEMP 'beta.patch'
+          $input = [IO.File]::OpenRead($patchGz)
+          $gzip = [IO.Compression.GzipStream]::new($input, [IO.Compression.CompressionMode]::Decompress)
+          $output = [IO.File]::Create($patchFile)
+          $gzip.CopyTo($output)
+          $output.Dispose(); $gzip.Dispose(); $input.Dispose()
+
+          Push-Location $dst
+          git init | Out-Null
+          git config user.name build
+          git config user.email build@local
+          git add .
+          git commit -m alpha-base | Out-Null
+          git apply --check $patchFile
+          if ($LASTEXITCODE -ne 0) { throw 'Feature patch check failed' }
+          git apply $patchFile
+          if ($LASTEXITCODE -ne 0) { throw 'Feature patch apply failed' }
+          Pop-Location
+
+          $program = Join-Path $dst 'ReclaimWindows\Program.cs'
+          $text = Get-Content $program -Raw
+          $needle = '        Config = Load();'
+          if (-not $text.Contains($needle)) { throw 'Could not locate startup initialization point' }
+          $text = $text.Replace($needle, "$needle`r`n        // Reclaim is a persistent blocker/controller: register it for Windows logon automatically.`r`n        SetStartWithWindows(true);")
+          Set-Content $program $text -NoNewline
+
+          $csprojText = Get-Content $proj -Raw
+          $csprojText = $csprojText -replace '<Version>0\.3\.0-beta1</Version>', '<Version>0.3.1-beta2</Version>'
+          Set-Content $proj $csprojText -NoNewline
+
+      - name: Publish Windows x64 single-file app
+        shell: pwsh
+        run: |
+          $root = Join-Path $env:RUNNER_TEMP 'reclaim-win-v031-beta2\ReclaimWindows'
+          $proj = Join-Path $root 'ReclaimWindows.csproj'
+          dotnet publish $proj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:DebugType=None -p:DebugSymbols=false
+          if ($LASTEXITCODE -ne 0) { throw 'dotnet publish failed' }
+          $exe = Join-Path $root 'bin\Release\net8.0-windows\win-x64\publish\ReclaimWindows.exe'
+          if (-not (Test-Path $exe)) { throw 'ReclaimWindows.exe not produced' }
+          Copy-Item $exe "$env:RUNNER_TEMP\ReclaimWindows-v0.3.1-beta2.exe"
+          Get-FileHash "$env:RUNNER_TEMP\ReclaimWindows-v0.3.1-beta2.exe" -Algorithm SHA256
+
+      - name: Upload Windows beta2
+        uses: actions/upload-artifact@v4
+        with:
+          name: ReclaimWindows-v0.3.1-beta2
+          path: ${{ runner.temp }}\ReclaimWindows-v0.3.1-beta2.exe
+          if-no-files-found: error
