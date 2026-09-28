@@ -47,13 +47,11 @@ jobs:
           cd /tmp/reclaim-v043-beta4/reclaim_feature_android_beta
           patch -p1 < "$GITHUB_WORKSPACE/reclaim-source/.reclaim-v04-beta1-feature/compile-fixes.patch"
 
-          # Reproduce the beta2 UI baseline. For the accessibility service,
-          # temporarily restore the one-line own-package handler expected by
-          # the verified beta4 patch; beta4 then applies the stable no-flash fix.
           cp "$GITHUB_WORKSPACE/reclaim-source/.reclaim-v04-beta2-overrides/WorkBlockAccessibilityService.kt" \
              app/src/main/java/com/kostas/reclaim/WorkBlockAccessibilityService.kt
           python - <<'PY'
           from pathlib import Path
+          import re
           root = Path('/tmp/reclaim-v043-beta4/reclaim_feature_android_beta')
           gradle = root/'app/build.gradle.kts'
           s = gradle.read_text()
@@ -70,21 +68,11 @@ jobs:
 
           service = root/'app/src/main/java/com/kostas/reclaim/WorkBlockAccessibilityService.kt'
           w = service.read_text()
-          old = '''        if (packageName == applicationContext.packageName) {
-              frictionBypassPackage = null
-              removeFrictionOverlay()
-              return
-          }'''
-          if old not in w:
-              old = '''        if (packageName == applicationContext.packageName) {
-              frictionBypassPackage = null
-              removeFrictionOverlay()
-              return
-          }'''.replace('              ', '            ')
-          if old not in w:
-              raise SystemExit('Expected beta2 own-package block not found')
-          w = w.replace(old, '        if (packageName == applicationContext.packageName) return')
-          service.write_text(w)
+          pattern = r'        if \(packageName == applicationContext\.packageName\) \{\s*frictionBypassPackage = null\s*removeFrictionOverlay\(\)\s*return\s*\}'
+          w2, count = re.subn(pattern, '        if (packageName == applicationContext.packageName) return', w, count=1)
+          if count != 1:
+              raise SystemExit(f'Expected beta2 own-package block once, found {count}')
+          service.write_text(w2)
           PY
 
           base64 --decode "$GITHUB_WORKSPACE/.reclaim-build-patches/android-v043-beta4.patch.gz.b64" > /tmp/android-beta4.patch.gz
