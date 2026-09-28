@@ -1,0 +1,271 @@
+--- a/ReclaimWindows/Program.cs
++++ b/ReclaimWindows/Program.cs
+@@ -15,11 +15,19 @@
+ internal static class Program
+ {
+     [STAThread]
+-    static void Main()
++    static void Main(string[] args)
+     {
++        using var singleInstance = new Mutex(true, @"Local\ReclaimWindowsSingleton", out var createdNew);
++        if (!createdNew)
++        {
++            MessageBox.Show("Reclaim is already running in the system tray.", "Reclaim", MessageBoxButtons.OK, MessageBoxIcon.Information);
++            return;
++        }
++
+         ApplicationConfiguration.Initialize();
+         using var engine = new ReclaimEngine();
+-        Application.Run(new MainForm(engine));
++        var startedByWindows = args.Any(a => a.Equals("--startup", StringComparison.OrdinalIgnoreCase));
++        Application.Run(new MainForm(engine, startedByWindows));
+     }
+ }
+ 
+@@ -57,6 +65,10 @@
+     public string UsageDate { get; set; } = DateTime.Now.ToString("yyyy-MM-dd");
+     public Dictionary<string, long> DailyUsageSeconds { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+     public Dictionary<string, int> DailyBlockedAttempts { get; set; } = new(StringComparer.OrdinalIgnoreCase);
++    public bool StartWithWindows { get; set; } = true;
++    public bool StartMinimized { get; set; } = true;
++    public bool MinimizeToTray { get; set; } = true;
++    public bool ProtectSettingsWhenLocked { get; set; } = true;
+     public ReclaimState State { get; set; } = new();
+ }
+ 
+@@ -128,6 +140,7 @@
+         Directory.CreateDirectory(_dir);
+         _configPath = Path.Combine(_dir, "config.json");
+         Config = Load();
++        SetStartWithWindows(Config.StartWithWindows);
+         if (Config.PairingCode.Length != 6 || !Config.PairingCode.All(char.IsDigit))
+         {
+             Config.PairingCode = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
+@@ -149,8 +162,10 @@
+         }
+     }
+ 
+-    public void StartSession(int minutes, string intention)
++    public void StartSession(int minutes, string intention, string strictMode = "NORMAL")
+     {
++        strictMode = strictMode.ToUpperInvariant();
++        if (strictMode is not ("NORMAL" or "STRICT" or "LOCKED")) strictMode = "NORMAL";
+         lock (_gate)
+         {
+             Config.State.Active = true;
+@@ -158,7 +173,7 @@
+             Config.State.Intention = intention.Trim();
+             Config.State.UpdatedAt = NowMs();
+             Config.State.Profile = "Work";
+-            Config.State.StrictMode = "NORMAL";
++            Config.State.StrictMode = strictMode;
+             Config.State.SessionId = Guid.NewGuid().ToString();
+             SaveLocked();
+         }
+@@ -167,10 +182,28 @@
+         StateChanged?.Invoke();
+     }
+ 
+-    public void StopSession()
++    public bool IsLockedActive()
+     {
+         lock (_gate)
+         {
++            NormalizeExpiryLocked();
++            return Config.State.Active &&
++                   Config.State.Until > NowMs() &&
++                   Config.State.StrictMode.Equals("LOCKED", StringComparison.OrdinalIgnoreCase);
++        }
++    }
++
++    public bool StopSession(bool force = false)
++    {
++        lock (_gate)
++        {
++            NormalizeExpiryLocked();
++            if (!force &&
++                Config.State.Active &&
++                Config.State.Until > NowMs() &&
++                Config.State.StrictMode.Equals("LOCKED", StringComparison.OrdinalIgnoreCase))
++                return false;
++
+             Config.State.Active = false;
+             Config.State.Until = 0;
+             Config.State.UpdatedAt = NowMs();
+@@ -179,6 +212,7 @@
+         }
+         ApplyHosts(force: true);
+         StateChanged?.Invoke();
++        return true;
+     }
+ 
+     public void UpdateRules(IEnumerable<string> processes, IEnumerable<string> categories, IEnumerable<string> customDomains)
+@@ -492,16 +526,24 @@
+                         NormalizeExpiryLocked();
+                         if (incomingUpdated >= Config.State.UpdatedAt)
+                         {
+-                            Config.State.Active = root.TryGetProperty("active", out var a) && a.GetBoolean();
+-                            Config.State.Until = root.TryGetProperty("until", out var until) ? until.GetInt64() : 0;
+-                            Config.State.Intention = root.TryGetProperty("intention", out var intent) ? intent.GetString() ?? "" : "";
+-                            Config.State.UpdatedAt = incomingUpdated;
+-                            Config.State.Profile = root.TryGetProperty("profile", out var profile) ? profile.GetString() ?? "Work" : "Work";
+-                            Config.State.StrictMode = root.TryGetProperty("strictMode", out var strict) ? strict.GetString() ?? "NORMAL" : "NORMAL";
+-                            Config.State.SessionId = root.TryGetProperty("sessionId", out var sid) ? sid.GetString() ?? "" : "";
+-                            Config.State.Categories = ReadStringSet(root, "categories", CategoryDomains.ContainsKey);
+-                            Config.State.CustomDomains = ReadStringSet(root, "customDomains", _ => true).Select(NormalizeDomain).Where(x => x.Length > 0).ToHashSet(StringComparer.OrdinalIgnoreCase);
+-                            SaveLocked();
++                            var lockedHere = Config.State.Active &&
++                                             Config.State.Until > NowMs() &&
++                                             Config.State.StrictMode.Equals("LOCKED", StringComparison.OrdinalIgnoreCase);
++                            if (!lockedHere)
++                            {
++                                var incomingActive = root.TryGetProperty("active", out var a) && a.GetBoolean();
++                                var incomingUntil = root.TryGetProperty("until", out var until) ? until.GetInt64() : 0;
++                                Config.State.Active = incomingActive && incomingUntil > NowMs();
++                                Config.State.Until = Config.State.Active ? incomingUntil : 0;
++                                Config.State.Intention = root.TryGetProperty("intention", out var intent) ? intent.GetString() ?? "" : "";
++                                Config.State.UpdatedAt = incomingUpdated;
++                                Config.State.Profile = root.TryGetProperty("profile", out var profile) ? profile.GetString() ?? "Work" : "Work";
++                                Config.State.StrictMode = root.TryGetProperty("strictMode", out var strict) ? strict.GetString() ?? "NORMAL" : "NORMAL";
++                                Config.State.SessionId = root.TryGetProperty("sessionId", out var sid) ? sid.GetString() ?? "" : "";
++                                Config.State.Categories = ReadStringSet(root, "categories", CategoryDomains.ContainsKey);
++                                Config.State.CustomDomains = ReadStringSet(root, "customDomains", _ => true).Select(NormalizeDomain).Where(x => x.Length > 0).ToHashSet(StringComparer.OrdinalIgnoreCase);
++                                SaveLocked();
++                            }
+                         }
+                     }
+                     if (Snapshot().Active && !_previousActive) LaunchWorkspace();
+@@ -704,8 +746,29 @@
+         }
+     }
+ 
++    public void UpdateAppSettings(bool startWithWindows, bool startMinimized, bool minimizeToTray, bool protectSettingsWhenLocked, string deviceName)
++    {
++        lock (_gate)
++        {
++            Config.StartWithWindows = startWithWindows;
++            Config.StartMinimized = startMinimized;
++            Config.MinimizeToTray = minimizeToTray;
++            Config.ProtectSettingsWhenLocked = protectSettingsWhenLocked;
++            Config.DeviceName = string.IsNullOrWhiteSpace(deviceName) ? Environment.MachineName : deviceName.Trim();
++            SaveLocked();
++        }
++        SetStartWithWindows(startWithWindows);
++        StateChanged?.Invoke();
++    }
++
++    private const string StartupTaskName = "ReclaimWindows";
++
+     public static bool IsStartWithWindows()
+     {
++        // Prefer a highest-privilege Task Scheduler entry because Reclaim needs
++        // elevation for hosts/process enforcement. A plain HKCU Run entry can
++        // be delayed or blocked by UAC for an elevated executable.
++        if (ScheduledTaskExists()) return true;
+         try
+         {
+             using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", false);
+@@ -719,12 +782,99 @@
+         try
+         {
+             using var key = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true);
+-            if (enabled)
++            if (!enabled)
++            {
++                DeleteScheduledTask();
++                key.DeleteValue("ReclaimWindows", false);
++                return;
++            }
++
++            var exe = Environment.ProcessPath ?? Application.ExecutablePath;
++            if (CreateScheduledTask(exe))
+             {
+-                var exe = Environment.ProcessPath ?? Application.ExecutablePath;
+-                key.SetValue("ReclaimWindows", $"\"{exe}\"");
++                // Prevent duplicate launches if an older beta left a Run entry.
++                key.DeleteValue("ReclaimWindows", false);
+             }
+-            else key.DeleteValue("ReclaimWindows", false);
++            else
++            {
++                // Safe fallback if Task Scheduler creation is unavailable.
++                key.SetValue("ReclaimWindows", $"\"{exe}\" --startup");
++            }
++        }
++        catch { }
++    }
++
++    private static bool ScheduledTaskExists()
++    {
++        try
++        {
++            using var process = Process.Start(new ProcessStartInfo
++            {
++                FileName = "schtasks.exe",
++                Arguments = $"/Query /TN \"{StartupTaskName}\"",
++                UseShellExecute = false,
++                CreateNoWindow = true,
++                WindowStyle = ProcessWindowStyle.Hidden,
++                RedirectStandardOutput = true,
++                RedirectStandardError = true
++            });
++            if (process == null) return false;
++            process.WaitForExit(3000);
++            return process.HasExited && process.ExitCode == 0;
++        }
++        catch { return false; }
++    }
++
++    private static bool CreateScheduledTask(string exe)
++    {
++        try
++        {
++            var psi = new ProcessStartInfo
++            {
++                FileName = "schtasks.exe",
++                UseShellExecute = false,
++                CreateNoWindow = true,
++                WindowStyle = ProcessWindowStyle.Hidden,
++                RedirectStandardOutput = true,
++                RedirectStandardError = true
++            };
++            psi.ArgumentList.Add("/Create");
++            psi.ArgumentList.Add("/TN");
++            psi.ArgumentList.Add(StartupTaskName);
++            psi.ArgumentList.Add("/TR");
++            psi.ArgumentList.Add($"\"{exe}\" --startup");
++            psi.ArgumentList.Add("/SC");
++            psi.ArgumentList.Add("ONLOGON");
++            psi.ArgumentList.Add("/RL");
++            psi.ArgumentList.Add("HIGHEST");
++            psi.ArgumentList.Add("/F");
++            using var process = Process.Start(psi);
++            if (process == null) return false;
++            process.WaitForExit(5000);
++            return process.HasExited && process.ExitCode == 0;
++        }
++        catch { return false; }
++    }
++
++    private static void DeleteScheduledTask()
++    {
++        try
++        {
++            var psi = new ProcessStartInfo
++            {
++                FileName = "schtasks.exe",
++                UseShellExecute = false,
++                CreateNoWindow = true,
++                WindowStyle = ProcessWindowStyle.Hidden,
++                RedirectStandardOutput = true,
++                RedirectStandardError = true
++            };
++            psi.ArgumentList.Add("/Delete");
++            psi.ArgumentList.Add("/TN");
++            psi.ArgumentList.Add(StartupTaskName);
++            psi.ArgumentList.Add("/F");
++            using var process = Process.Start(psi);
++            process?.WaitForExit(3000);
++        }
++        catch { }
++    }
