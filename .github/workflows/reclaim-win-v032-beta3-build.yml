@@ -28,6 +28,8 @@ jobs:
       - name: Reconstruct and patch Windows beta3 source
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
+          Write-Host '1/5 Extract source'
           $zip = Join-Path $env:GITHUB_WORKSPACE 'reclaim-source\.reclaim-win-v03-beta1\source.zip'
           if (-not (Test-Path $zip)) { throw 'Verified beta1 source ZIP missing' }
           $dst = Join-Path $env:RUNNER_TEMP 'reclaim-win-v032-beta3'
@@ -39,13 +41,14 @@ jobs:
           if (-not (Test-Path $program)) { throw 'Program.cs missing' }
           if (-not (Test-Path $proj)) { throw 'ReclaimWindows.csproj missing' }
 
-          # Normalize the two patched text files so the verified unified patch applies identically.
-          $utf8 = New-Object System.Text.UTF8Encoding($false)
+          Write-Host '2/5 Normalize source text'
+          $utf8 = [System.Text.UTF8Encoding]::new($false)
           foreach ($file in @($program, $proj)) {
             $text = [IO.File]::ReadAllText($file).Replace("`r`n", "`n").Replace("`r", "`n")
             [IO.File]::WriteAllText($file, $text, $utf8)
           }
 
+          Write-Host '3/5 Decode verified patch'
           $b64 = Get-Content '.reclaim-build-patches\windows-v032-beta3.patch.gz.b64' -Raw
           $gz = Join-Path $env:RUNNER_TEMP 'windows-beta3.patch.gz'
           [IO.File]::WriteAllBytes($gz, [Convert]::FromBase64String($b64))
@@ -56,8 +59,10 @@ jobs:
           $gzip.CopyTo($output)
           $output.Dispose(); $gzip.Dispose(); $input.Dispose()
           $patchHash = (Get-FileHash $patch -Algorithm SHA256).Hash.ToLower()
+          Write-Host "Patch SHA: $patchHash"
           if ($patchHash -ne '70af5f754412069c7552b79389e28c7dd3943c54eacf91cb257725c3b6639bdb') { throw "Patch SHA mismatch: $patchHash" }
 
+          Write-Host '4/5 Apply patch'
           Push-Location $dst
           git init | Out-Null
           git config user.name build
@@ -70,6 +75,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Windows beta3 patch apply failed' }
           Pop-Location
 
+          Write-Host '5/5 Verify patched features'
           $updated = Get-Content $proj -Raw
           if ($updated -notmatch '<Version>0\.3\.2-beta3</Version>') { throw 'Wrong beta3 version after patch' }
           $programText = Get-Content $program -Raw
