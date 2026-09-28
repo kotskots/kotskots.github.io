@@ -34,7 +34,14 @@ jobs:
           patch -p1 < "$GITHUB_WORKSPACE/.reclaim-v04/reclaim-v04.patch"
           cp "$GITHUB_WORKSPACE/.reclaim-v04/CloudSync.kt" app/src/main/java/com/kostas/reclaim/CloudSync.kt
           cp "$GITHUB_WORKSPACE/.reclaim-v04/CloudSyncService.kt" app/src/main/java/com/kostas/reclaim/CloudSyncService.kt
-          cat "$GITHUB_WORKSPACE"/.reclaim-v04-beta1/patch/part* > /tmp/beta.patch.gz.b64
+          cat \
+            "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part00" \
+            "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part01" \
+            "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part02a" \
+            "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part02b" \
+            "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part03" \
+            "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part04" \
+            "$GITHUB_WORKSPACE/.reclaim-v04-beta1/patch/part05" > /tmp/beta.patch.gz.b64
           base64 --decode /tmp/beta.patch.gz.b64 > /tmp/beta.patch.gz
           echo '15925b1f309666b3faec00f1dbd1d0e5db234fbd7d45bc38197673c0f1d1d14d  /tmp/beta.patch.gz' | sha256sum -c -
           gzip -dc /tmp/beta.patch.gz > /tmp/beta.patch
