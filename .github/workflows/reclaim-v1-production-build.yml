@@ -93,14 +93,31 @@ jobs:
           base64 --decode /tmp/reclaim-v1.patch.gz.b64 > /tmp/reclaim-v1.patch.gz
           gzip -dc /tmp/reclaim-v1.patch.gz > /tmp/reclaim-v1.patch
           echo 'bd46993e550ff32098fc6b11f85154b445053f41c4c8c0c51f304227c3caa705  /tmp/reclaim-v1.patch' | sha256sum -c -
-          patch --dry-run -p1 < /tmp/reclaim-v1.patch
-          patch -p1 < /tmp/reclaim-v1.patch
+
+          # The beta4 build reconstructs the accessibility service from a verified
+          # override, so apply the rest of the production patch and then replace
+          # that one file with the exact final production source.
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('/tmp/reclaim-v1.patch').read_text()
+          marker = 'diff --git a/app/src/main/java/com/kostas/reclaim/WorkBlockAccessibilityService.kt b/app/src/main/java/com/kostas/reclaim/WorkBlockAccessibilityService.kt\n'
+          if marker not in p:
+              raise SystemExit('WorkBlock patch marker missing')
+          Path('/tmp/reclaim-v1-clean.patch').write_text(p.split(marker, 1)[0])
+          PY
+          patch --dry-run -p1 < /tmp/reclaim-v1-clean.patch
+          patch -p1 < /tmp/reclaim-v1-clean.patch
+
+          base64 --decode "$GITHUB_WORKSPACE/.reclaim-v1-production/workblock-final.kt.gz.b64" > /tmp/workblock-final.kt.gz
+          gzip -dc /tmp/workblock-final.kt.gz > app/src/main/java/com/kostas/reclaim/WorkBlockAccessibilityService.kt
+          echo '55884d71b1b545cab8d5fa201669413a82b84635ae1bffefb8c52a244a8daaad  app/src/main/java/com/kostas/reclaim/WorkBlockAccessibilityService.kt' | sha256sum -c -
 
           grep -q 'versionCode = 10' app/build.gradle.kts
           grep -q 'versionName = "1.0.0"' app/build.gradle.kts
           grep -q 'fun ProductionSmokingScreen' app/src/main/java/com/kostas/reclaim/ProductionScreens.kt
           grep -q 'fun ProductionSettingsScreen' app/src/main/java/com/kostas/reclaim/ProductionScreens.kt
           grep -q 'data class AppLimit' app/src/main/java/com/kostas/reclaim/Models.kt
+          grep -q 'Reclaim 1.0 intentionally has no generic friction' app/src/main/java/com/kostas/reclaim/WorkBlockAccessibilityService.kt
           test ! -f app/src/main/java/com/kostas/reclaim/CloudSync.kt
           test ! -f app/src/main/java/com/kostas/reclaim/CloudSyncService.kt
 
