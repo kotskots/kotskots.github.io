@@ -87,16 +87,19 @@ jobs:
           gzip -dc /tmp/wb.gz > app/src/main/java/com/kostas/reclaim/WorkBlockAccessibilityService.kt
           echo '55884d71b1b545cab8d5fa201669413a82b84635ae1bffefb8c52a244a8daaad  app/src/main/java/com/kostas/reclaim/WorkBlockAccessibilityService.kt' | sha256sum -c -
 
-          # ProductionScreens had one missing function-closing brace after the Settings dialog.
+          # Fix the missing close brace inside the Locked-mode settings item.
           python - <<'PY'
           from pathlib import Path
           p=Path('app/src/main/java/com/kostas/reclaim/ProductionScreens.kt')
-          s=p.read_text()
-          needle='\n}\n\n@Composable\nprivate fun ProductionHealthRow'
-          if needle not in s: raise SystemExit('Settings close marker missing')
-          s=s.replace(needle,'\n}\n}\n\n@Composable\nprivate fun ProductionHealthRow',1)
+          lines=p.read_text().splitlines()
+          hits=[]
+          for i,line in enumerate(lines):
+              if 'Emergency unlock' in line and line.lstrip().startswith('item{Card{Column'):
+                  lines[i]=line+'}'
+                  hits.append(i)
+          if len(hits)!=1: raise SystemExit(f'Emergency Unlock line hits={len(hits)}')
+          s='\n'.join(lines)+'\n'
           p.write_text(s)
-          # lexical brace check, ignoring strings/comments
           state='code'; i=0; bal=0
           while i<len(s):
               c=s[i]; n=s[i+1] if i+1<len(s) else ''
